@@ -332,6 +332,26 @@ def test_league_table_ranks_player_club_by_points():
     )
 
 
+def test_league_table_uses_league_record_not_total_cup_wins():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = SeasonProgress(
+        matchesPlayed=10,
+        wins=8,
+        draws=0,
+        losses=2,
+        leagueWins=3,
+        leagueDraws=1,
+        leagueLosses=1,
+        fixtures=build_season_fixtures(p),
+    )
+
+    table = build_league_table(p, progress)
+    player_row = next(row for row in table if row.clubId == p.clubId)
+
+    assert player_row.points == 10
+    assert player_row.wins == 3
+
+
 def test_close_season_awards_league_only_when_table_champion():
     p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
     league_name = "LaLiga EA Sports"

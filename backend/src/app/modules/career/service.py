@@ -196,6 +196,15 @@ def _record_match_progress(player: Player, progress: SeasonProgress, match: Matc
         progress.draws += 1
     else:
         progress.losses += 1
+
+    club = get_club(player.clubId) if player.clubId else None
+    if club and match.competitionId == club.league_id:
+        if match.result == "W":
+            progress.leagueWins += 1
+        elif match.result == "D":
+            progress.leagueDraws += 1
+        else:
+            progress.leagueLosses += 1
     recent = list(progress.recentMatches or [])
     recent.append(match)
     if len(recent) > RECENT_MATCH_LIMIT:

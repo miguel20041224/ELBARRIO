@@ -277,6 +277,9 @@ class SeasonProgress(BaseModel):
     wins: int = 0
     draws: int = 0
     losses: int = 0
+    leagueWins: int = 0
+    leagueDraws: int = 0
+    leagueLosses: int = 0
     recentMatches: list[MatchResult] = Field(default_factory=list)
     fixtures: list[Fixture] = Field(default_factory=list)
     competitionProgress: list[CompetitionProgress] = Field(default_factory=list)

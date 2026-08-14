@@ -276,6 +276,9 @@ export interface SeasonProgress {
   wins: number;
   draws: number;
   losses: number;
+  leagueWins: number;
+  leagueDraws: number;
+  leagueLosses: number;
   recentMatches: MatchResult[];
   fixtures?: Fixture[];
   competitionProgress?: CompetitionProgress[];

@@ -266,17 +266,22 @@ def build_league_table(player: Player, progress: SeasonProgress) -> list[LeagueT
         return []
 
     played = _league_matches_played(progress, club.league_id)
-    player_points = progress.wins * 3 + progress.draws
+    league_wins = progress.leagueWins
+    league_draws = progress.leagueDraws
+    league_losses = progress.leagueLosses
+    if league_wins + league_draws + league_losses == 0:
+        league_wins, league_draws, league_losses = progress.wins, progress.draws, progress.losses
+    player_points = league_wins * 3 + league_draws
     player_goals_for = sum(m.goalsFor for m in progress.recentMatches if m.competitionId == club.league_id)
     player_goals_against = sum(m.goalsAgainst for m in progress.recentMatches if m.competitionId == club.league_id)
     if player_goals_for == 0 and player_goals_against == 0:
-        player_goals_for = max(0, progress.wins * 2 + progress.draws)
-        player_goals_against = max(0, progress.losses * 2 + progress.draws)
+        player_goals_for = max(0, league_wins * 2 + league_draws)
+        player_goals_against = max(0, league_losses * 2 + league_draws)
 
     rows: list[LeagueTableEntry] = []
     for league_club in league_clubs:
         if league_club.id == club.id:
-            wins, draws, losses = progress.wins, progress.draws, progress.losses
+            wins, draws, losses = league_wins, league_draws, league_losses
             gf, ga, points = player_goals_for, player_goals_against, player_points
         else:
             wins, draws, losses, gf, ga, points = _projected_record_for(league_club, played)
