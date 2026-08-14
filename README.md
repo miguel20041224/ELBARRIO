@@ -91,6 +91,38 @@ docker compose up --build
 
 This starts the frontend, backend, and PostgreSQL service together.
 
+
+## Deployment
+
+### Backend on Render or Railway
+
+Deploy the backend as a Docker service from `backend/Dockerfile`. The image uses Python 3.14 to match `backend/pyproject.toml`, installs the locked Poetry dependencies, and then installs `psycopg[binary]` because the application uses SQLAlchemy's synchronous `create_engine` for PostgreSQL.
+
+Required backend environment variables:
+
+```env
+ENVIRONMENT=production
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE
+CORS_ORIGINS=["https://your-frontend.vercel.app"]
+```
+
+Notes:
+
+- Health check path: `/health`
+- Render and Railway provide `PORT`; the Docker command uses `${PORT:-8000}`.
+- `CORS_ORIGINS` must contain the exact frontend origin only, not `/api` or another path.
+- Use the `postgresql+psycopg://` URL scheme in production. If a host gives you `postgresql://...`, change only the scheme to `postgresql+psycopg://...` so SQLAlchemy uses the synchronous psycopg driver installed by the Docker image.
+
+### Frontend on Vercel
+
+Set this Vercel environment variable for the frontend project:
+
+```env
+VITE_API_URL=https://<backend-host>/api
+```
+
+After Vercel gives you the production frontend URL, add that origin to the backend `CORS_ORIGINS` value and redeploy the backend if needed.
+
 ## Validation
 
 ```bash
