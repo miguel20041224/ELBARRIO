@@ -1,0 +1,23 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.env.local
+*.db
+*.sqlite
+.venv/
+.DS_Store
+.vscode/
+.idea/
+
+# Local agent/tooling metadata
+.atl/
+# Python/test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+# TypeScript build info
+*.tsbuildinfo
+# Build outputs
+frontend/dist/
