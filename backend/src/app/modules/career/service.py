@@ -24,7 +24,7 @@ from app.modules.roulette.service import (
     find_outcome,
 )
 from app.modules.simulation.match import simulate_match
-from app.modules.simulation.season import close_season, ensure_season_fixtures
+from app.modules.simulation.season import close_season, ensure_season_fixtures, refresh_league_table
 from app.modules.transfers.service import (
     apply_transfer,
     compute_transfer_window,
@@ -182,7 +182,7 @@ def spin_roulette(session_id: str, outcome_id: str, db: Session) -> CareerSessio
     return _to_response(model)
 
 
-def _record_match_progress(progress: SeasonProgress, match: MatchResult) -> SeasonProgress:
+def _record_match_progress(player: Player, progress: SeasonProgress, match: MatchResult) -> SeasonProgress:
     progress.matchesPlayed += 1
     progress.goals += match.goals
     progress.assists += match.assists
@@ -201,6 +201,7 @@ def _record_match_progress(progress: SeasonProgress, match: MatchResult) -> Seas
     if len(recent) > RECENT_MATCH_LIMIT:
         recent = recent[-RECENT_MATCH_LIMIT:]
     progress.recentMatches = recent
+    progress = refresh_league_table(player, progress)
     return SeasonProgress(**progress.model_dump())
 
 
@@ -225,7 +226,7 @@ def play_match(session_id: str, db: Session) -> CareerSession | None:
     progress = ensure_season_fixtures(player, progress, model.current_season)
     fixture = progress.fixtures[progress.matchesPlayed] if progress.fixtures else None
     match = simulate_match(player, progress.matchesPlayed + 1, fixture=fixture)
-    progress = _record_match_progress(progress, match)
+    progress = _record_match_progress(player, progress, match)
 
     if progress.matchesPlayed < progress.matchesTotal and should_offer_event(progress):
         event = draw_event_for(player)

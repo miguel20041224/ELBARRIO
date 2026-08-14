@@ -22,6 +22,7 @@ from app.modules.player.factory import build_player_from_draft
 from app.modules.roulette.service import apply_outcome, build_roulette, find_outcome
 from app.modules.simulation.match import simulate_match
 from app.modules.simulation.season import (
+    build_league_table,
     build_season_fixtures,
     close_season,
     ensure_season_fixtures,
@@ -34,7 +35,7 @@ from app.modules.transfers.service import (
     compute_transfer_window,
     stay_at_club,
 )
-from app.schemas import CreationDraft, Fixture, PendingChain, SeasonProgress, SeasonSnapshot
+from app.schemas import CreationDraft, Fixture, LeagueTableEntry, PendingChain, SeasonProgress, SeasonSnapshot
 
 
 def make_draft(**overrides) -> CreationDraft:
@@ -210,6 +211,8 @@ def test_career_play_match_consumes_next_persisted_fixture():
 
         match = session.seasonProgress.recentMatches[-1]
         assert session.seasonProgress.matchesPlayed == 1
+        assert session.seasonProgress.leagueTable
+        assert session.seasonProgress.leaguePosition is not None
         assert match.week == first_fixture.week
         assert match.competitionId == first_fixture.competitionId
         assert match.opponentId == first_fixture.opponentId
@@ -306,6 +309,76 @@ def test_star_player_more_minutes_than_rookie():
     rookie_minutes = sum(simulate_match(rookie, i, rng=rng).minutesPlayed for i in range(20))
     star_minutes = sum(simulate_match(star, i, rng=rng).minutesPlayed for i in range(20))
     assert star_minutes > rookie_minutes
+
+
+def test_league_table_ranks_player_club_by_points():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = SeasonProgress(
+        matchesPlayed=10,
+        wins=6,
+        draws=2,
+        losses=2,
+        fixtures=build_season_fixtures(p),
+    )
+
+    table = build_league_table(p, progress)
+    player_row = next(row for row in table if row.clubId == p.clubId)
+
+    assert player_row.points == 20
+    assert player_row.position >= 1
+    assert table == sorted(
+        table,
+        key=lambda row: (-row.points, -row.goalDifference, -row.goalsFor, row.clubName),
+    )
+
+
+def test_close_season_awards_league_only_when_table_champion():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    league_name = "LaLiga EA Sports"
+    progress = SeasonProgress(
+        matchesPlayed=38,
+        matchesTotal=38,
+        appearances=38,
+        goals=50,
+        assists=20,
+        minutesPlayed=3300,
+        ratingsSum=38 * 9.2,
+        wins=30,
+        draws=5,
+        losses=3,
+        leagueTable=[
+            LeagueTableEntry(position=1, clubId="esp-barcelona", clubName="FC Barcelona", shortName="Barça", played=38, wins=31, draws=4, losses=3, goalsFor=90, goalsAgainst=28, goalDifference=62, points=97),
+            LeagueTableEntry(position=2, clubId="esp-realmadrid", clubName="Real Madrid", shortName="Madrid", played=38, wins=30, draws=5, losses=3, goalsFor=88, goalsAgainst=30, goalDifference=58, points=95),
+        ],
+    )
+
+    snap = close_season(p, progress, 1, rng=random.Random(2))
+
+    assert league_name not in snap.trophies
+
+
+def test_close_season_awards_league_to_table_champion():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = SeasonProgress(
+        matchesPlayed=38,
+        matchesTotal=38,
+        appearances=38,
+        goals=12,
+        assists=9,
+        minutesPlayed=2900,
+        ratingsSum=38 * 7.1,
+        wins=24,
+        draws=8,
+        losses=6,
+        leagueTable=[
+            LeagueTableEntry(position=1, clubId="esp-realmadrid", clubName="Real Madrid", shortName="Madrid", played=38, wins=24, draws=8, losses=6, goalsFor=76, goalsAgainst=35, goalDifference=41, points=80),
+            LeagueTableEntry(position=2, clubId="esp-barcelona", clubName="FC Barcelona", shortName="Barça", played=38, wins=23, draws=9, losses=6, goalsFor=74, goalsAgainst=35, goalDifference=39, points=78),
+        ],
+    )
+
+    snap = close_season(p, progress, 1, rng=random.Random(2))
+
+    assert "LaLiga EA Sports" in snap.trophies
 
 
 def test_close_season_produces_snapshot_with_totals():

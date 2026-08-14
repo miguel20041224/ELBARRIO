@@ -247,6 +247,22 @@ export interface MatchResult {
   isClasico: boolean;
 }
 
+
+export interface LeagueTableEntry {
+  position: number;
+  clubId: string;
+  clubName: string;
+  shortName: string;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+}
+
 export interface SeasonProgress {
   matchesPlayed: number;
   matchesTotal: number;
@@ -263,6 +279,9 @@ export interface SeasonProgress {
   recentMatches: MatchResult[];
   fixtures?: Fixture[];
   competitionProgress?: CompetitionProgress[];
+  leagueTable?: LeagueTableEntry[];
+  leaguePosition?: number | null;
+  leaguePointsFromTop?: number | null;
 }
 
 export type RouletteKind = "career_start" | "season_start" | "season_end";

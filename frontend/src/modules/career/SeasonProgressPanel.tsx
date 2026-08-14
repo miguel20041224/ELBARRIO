@@ -21,6 +21,10 @@ export default function SeasonProgressPanel({
   const matchesRemaining = Math.max(0, progress.matchesTotal - progress.matchesPlayed);
   const nextFixture = progress.fixtures?.[progress.matchesPlayed];
   const competitionProgress = progress.competitionProgress ?? [];
+  const leagueTable = progress.leagueTable ?? [];
+  const playerLeagueRow = leagueTable.find(
+    (row) => row.position === progress.leaguePosition,
+  );
   const percent = Math.min(
     100,
     Math.round((progress.matchesPlayed / Math.max(1, progress.matchesTotal)) * 100),
@@ -70,6 +74,27 @@ export default function SeasonProgressPanel({
         />
       </div>
 
+      {progress.leaguePosition && (
+        <div className="rounded border border-barrio-border/60 bg-barrio-bg/30 px-3 py-2 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-barrio-muted">Posición en liga</span>
+            <span className="font-display text-xl text-barrio-gold">
+              #{progress.leaguePosition}
+            </span>
+          </div>
+          <p className="text-xs text-barrio-muted">
+            {playerLeagueRow
+              ? `${playerLeagueRow.points} pts · ${playerLeagueRow.wins}-${playerLeagueRow.draws}-${playerLeagueRow.losses}`
+              : "Tabla en construcción"}
+            {progress.leaguePointsFromTop
+              ? ` · a ${progress.leaguePointsFromTop} pts del líder`
+              : progress.leaguePosition === 1
+                ? " · líderes"
+                : ""}
+          </p>
+        </div>
+      )}
+
       {competitionProgress.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2">
           {competitionProgress.map((competition) => (
@@ -117,6 +142,34 @@ export default function SeasonProgressPanel({
           </button>
         )}
       </div>
+
+      {leagueTable.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-barrio-border">
+          <p className="text-xs uppercase tracking-widest text-barrio-muted">
+            Tabla de liga
+          </p>
+          <ul className="space-y-1">
+            {leagueTable.slice(0, 5).map((row) => (
+              <li
+                key={row.clubId}
+                className={clsx(
+                  "flex items-center justify-between rounded border px-3 py-1 text-xs",
+                  row.position === progress.leaguePosition
+                    ? "border-barrio-gold bg-barrio-gold/10"
+                    : "border-barrio-border/60 bg-barrio-bg/30",
+                )}
+              >
+                <span className="truncate">
+                  {row.position}. {row.shortName}
+                </span>
+                <span className="tabular-nums text-barrio-muted">
+                  {row.points} pts · DG {row.goalDifference}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {progress.recentMatches.length > 0 && (
         <div className="space-y-2 pt-2 border-t border-barrio-border">

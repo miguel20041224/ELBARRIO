@@ -1,8 +1,6 @@
 import random
-from itertools import cycle
-
 from app.modules.clubs.data import CLUBS, Club, get_club, get_clubs_for_league, get_league
-from app.schemas import Fixture, Player, SeasonProgress, SeasonSnapshot, TrophyRecord
+from app.schemas import Fixture, LeagueTableEntry, MatchResult, Player, SeasonProgress, SeasonSnapshot, TrophyRecord
 
 
 CLASICO_PAIRS: set[frozenset[str]] = {
@@ -234,34 +232,113 @@ def ensure_season_fixtures(
     return progress
 
 
+
+
+def _projected_points_for(club: Club, played: int) -> int:
+    if played <= 0:
+        return 0
+    expected_ppg = 0.75 + (club.prestige / 100) * 1.45
+    return min(played * 3, round(played * expected_ppg))
+
+
+def _projected_record_for(club: Club, played: int) -> tuple[int, int, int, int, int, int]:
+    points = _projected_points_for(club, played)
+    wins = min(played, points // 3)
+    draws = min(played - wins, points - wins * 3)
+    losses = max(0, played - wins - draws)
+    goals_for = max(0, round(played * (0.8 + club.prestige / 70)))
+    goals_against = max(0, round(played * (1.8 - club.prestige / 120)))
+    return wins, draws, losses, goals_for, goals_against, points
+
+
+def _league_matches_played(progress: SeasonProgress, league_id: str) -> int:
+    if progress.fixtures:
+        return sum(1 for fixture in progress.fixtures[: progress.matchesPlayed] if fixture.competitionId == league_id)
+    return progress.matchesPlayed
+
+
+def build_league_table(player: Player, progress: SeasonProgress) -> list[LeagueTableEntry]:
+    club = get_club(player.clubId) if player.clubId else None
+    if not club:
+        return []
+    league_clubs = get_clubs_for_league(club.league_id)
+    if not league_clubs:
+        return []
+
+    played = _league_matches_played(progress, club.league_id)
+    player_points = progress.wins * 3 + progress.draws
+    player_goals_for = sum(m.goalsFor for m in progress.recentMatches if m.competitionId == club.league_id)
+    player_goals_against = sum(m.goalsAgainst for m in progress.recentMatches if m.competitionId == club.league_id)
+    if player_goals_for == 0 and player_goals_against == 0:
+        player_goals_for = max(0, progress.wins * 2 + progress.draws)
+        player_goals_against = max(0, progress.losses * 2 + progress.draws)
+
+    rows: list[LeagueTableEntry] = []
+    for league_club in league_clubs:
+        if league_club.id == club.id:
+            wins, draws, losses = progress.wins, progress.draws, progress.losses
+            gf, ga, points = player_goals_for, player_goals_against, player_points
+        else:
+            wins, draws, losses, gf, ga, points = _projected_record_for(league_club, played)
+        rows.append(
+            LeagueTableEntry(
+                position=0,
+                clubId=league_club.id,
+                clubName=league_club.name,
+                shortName=league_club.short_name,
+                played=played,
+                wins=wins,
+                draws=draws,
+                losses=losses,
+                goalsFor=gf,
+                goalsAgainst=ga,
+                goalDifference=gf - ga,
+                points=points,
+            )
+        )
+
+    rows.sort(key=lambda row: (-row.points, -row.goalDifference, -row.goalsFor, row.clubName))
+    return [row.model_copy(update={"position": index}) for index, row in enumerate(rows, start=1)]
+
+
+def refresh_league_table(player: Player, progress: SeasonProgress) -> SeasonProgress:
+    table = build_league_table(player, progress)
+    progress.leagueTable = table
+    player_row = next((row for row in table if row.clubId == player.clubId), None)
+    if player_row and table:
+        progress.leaguePosition = player_row.position
+        progress.leaguePointsFromTop = max(0, table[0].points - player_row.points)
+    return progress
+
+
+def _knockout_trophies(progress: SeasonProgress, league_id: str) -> list[str]:
+    trophies: list[str] = []
+    for match in progress.recentMatches:
+        if match.competitionId == league_id:
+            continue
+        is_final = "final" in match.stageDisplay.lower() or match.stageDisplay.lower() == "final"
+        if is_final and match.result == "W" and match.competitionName not in trophies:
+            trophies.append(match.competitionName)
+    return trophies
+
+
 def _team_trophies_for_club(
     player: Player,
-    average_rating: float,
-    wins: int,
-    matches: int,
-    rng: random.Random,
+    progress: SeasonProgress,
 ) -> list[str]:
     trophies: list[str] = []
     club = get_club(player.clubId) if player.clubId else None
     league = get_league(club.league_id) if club else None
-    if not club or not league or matches == 0:
+    if not club or not league or progress.matchesPlayed == 0:
         return trophies
 
-    win_ratio = wins / matches if matches else 0
-    prestige_factor = club.prestige / 100
-    team_bonus = prestige_factor * 0.5
-    league_chance = max(0.02, win_ratio * 1.2 - 0.5 + team_bonus + (average_rating - 6.5) * 0.15)
-    if rng.random() < min(0.55, league_chance):
-        trophies.append(f"{league.name}")
-    cup_chance = max(0.02, win_ratio * 0.6 - 0.15 + team_bonus * 0.3)
-    if rng.random() < min(0.35, cup_chance):
-        trophies.append(f"Copa {league.country}")
-    if league.tier >= 4 and prestige_factor >= 0.82 and average_rating >= 8.0:
-        if rng.random() < 0.18:
-            trophies.append("Champions League")
+    table = progress.leagueTable or build_league_table(player, progress)
+    player_row = next((row for row in table if row.clubId == club.id), None)
+    if player_row and player_row.position == 1:
+        trophies.append(league.name)
 
+    trophies.extend(_knockout_trophies(progress, club.league_id))
     return trophies
-
 
 def close_season(
     player: Player,
@@ -276,9 +353,9 @@ def close_season(
     club = get_club(player.clubId) if player.clubId else None
     club_name = club.name if club else None
 
-    team_trophies = _team_trophies_for_club(
-        player, average_rating, progress.wins, progress.matchesPlayed, r
-    )
+    if not progress.leagueTable:
+        progress = refresh_league_table(player, progress)
+    team_trophies = _team_trophies_for_club(player, progress)
     if team_trophies:
         for name in team_trophies:
             player.trophies.append(

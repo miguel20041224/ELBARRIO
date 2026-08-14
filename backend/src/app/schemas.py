@@ -247,6 +247,23 @@ class MatchResult(BaseModel):
     isClasico: bool = False
 
 
+
+
+class LeagueTableEntry(BaseModel):
+    position: int
+    clubId: str
+    clubName: str
+    shortName: str
+    played: int
+    wins: int
+    draws: int
+    losses: int
+    goalsFor: int
+    goalsAgainst: int
+    goalDifference: int
+    points: int
+
+
 class SeasonProgress(BaseModel):
     matchesPlayed: int = 0
     matchesTotal: int = 34
@@ -263,6 +280,9 @@ class SeasonProgress(BaseModel):
     recentMatches: list[MatchResult] = Field(default_factory=list)
     fixtures: list[Fixture] = Field(default_factory=list)
     competitionProgress: list[CompetitionProgress] = Field(default_factory=list)
+    leagueTable: list[LeagueTableEntry] = Field(default_factory=list)
+    leaguePosition: int | None = None
+    leaguePointsFromTop: int | None = None
 
     @model_validator(mode="after")
     def align_fixture_derived_progress(self):
