@@ -27,9 +27,14 @@ export default function TransferWindowPanel({ window, busy, onAccept }: Props) {
         </p>
         <h3 className="heading text-2xl">Ventana de fichajes</h3>
         <p className="text-sm text-barrio-muted mt-2">
-          Estas son las ofertas concretas que llegaron por vos. Podés
-          renovar con tu club actual o cambiar de proyecto. La decisión
-          define tu próxima temporada.
+          {reasonCopy[window.reason]}
+        </p>
+        <p className="mt-2 text-xs text-barrio-muted">
+          Contrato restante: {window.contractYearsRemaining} año
+          {window.contractYearsRemaining === 1 ? "" : "s"}
+          {window.renewalOfferYears
+            ? ` · Renovación disponible por ${window.renewalOfferYears} años`
+            : ""}
         </p>
       </div>
 
@@ -105,7 +110,7 @@ export default function TransferWindowPanel({ window, busy, onAccept }: Props) {
                 <PlayingBadge chance={offer.playingChance} />
               </div>
 
-              <dl className="mt-3 grid grid-cols-3 gap-3 text-xs">
+              <dl className="mt-3 grid grid-cols-4 gap-3 text-xs">
                 <div>
                   <dt className="text-barrio-muted uppercase tracking-widest">
                     Salario
@@ -127,6 +132,12 @@ export default function TransferWindowPanel({ window, busy, onAccept }: Props) {
                     Contrato
                   </dt>
                   <dd>{offer.contractYears} años</dd>
+                </div>
+                <div>
+                  <dt className="text-barrio-muted uppercase tracking-widest">
+                    Operación
+                  </dt>
+                  <dd>{operationLabel(offer)}</dd>
                 </div>
               </dl>
 
@@ -155,6 +166,28 @@ export default function TransferWindowPanel({ window, busy, onAccept }: Props) {
       </div>
     </div>
   );
+}
+
+const reasonCopy = {
+  expiring_contract:
+    "Tu contrato entra en el último año. Ahora sí hay mercado real: el club escucha ofertas o te renueva.",
+  release_clause:
+    "Tenés contrato largo. Solo aparecen ofertas serias porque están dispuestos a pagar la cláusula.",
+  transfer_request:
+    "Pediste salir. El club abre la puerta, pero la operación todavía tiene costo deportivo y emocional.",
+  free_agent:
+    "Terminó tu contrato. Llegás libre y negociás como dueño de tu pase.",
+  loan:
+    "No estás jugando lo suficiente. Una cesión puede darte minutos sin romper el contrato principal.",
+};
+
+function operationLabel(offer: TransferOffer) {
+  if (offer.transferKind === "free_agent") return "Libre";
+  if (offer.transferKind === "loan") return "Cesión";
+  if (offer.paysReleaseClause) {
+    return `Cláusula €${Math.round(offer.transferFee).toLocaleString()}`;
+  }
+  return "Traspaso";
 }
 
 function PlayingBadge({ chance }: { chance: PlayingChance }) {

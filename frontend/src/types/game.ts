@@ -69,6 +69,7 @@ export interface PlayerFinance {
   weeklySalary: number;
   contractYears: number;
   signOnBonus: number;
+  releaseClause: number;
 }
 
 export interface PlayerRelationships {
@@ -286,6 +287,13 @@ export interface RouletteRoll {
 }
 
 export type PlayingChance = "starter" | "rotation" | "backup";
+export type TransferKind = "transfer" | "free_agent" | "loan";
+export type TransferWindowReason =
+  | "expiring_contract"
+  | "release_clause"
+  | "transfer_request"
+  | "free_agent"
+  | "loan";
 
 export interface TransferOffer {
   id: string;
@@ -297,6 +305,10 @@ export interface TransferOffer {
   reputationRequired: number;
   note: string;
   highlight: string;
+  transferKind: TransferKind;
+  transferFee: number;
+  releaseClause?: number | null;
+  paysReleaseClause: boolean;
 }
 
 export interface TransferWindow {
@@ -305,6 +317,9 @@ export interface TransferWindow {
   currentClub: ClubInfo | null;
   stayNote: string;
   offers: TransferOffer[];
+  reason: TransferWindowReason;
+  contractYearsRemaining: number;
+  renewalOfferYears?: number | null;
 }
 
 export type CareerMode = "player" | "manager";

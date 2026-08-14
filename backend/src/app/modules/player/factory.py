@@ -84,6 +84,7 @@ def build_player_from_draft(draft: CreationDraft, rng: random.Random | None = No
         weeklySalary=base_salary,
         contractYears=3,
         signOnBonus=base_salary * 8,
+        releaseClause=round(base_salary * 52 * max(2.5, club_salary_factor * 8), 2),
     )
     relationships = PlayerRelationships(
         coach=55,

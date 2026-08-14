@@ -63,6 +63,29 @@ def _number_of_offers(score: float) -> int:
     return 0
 
 
+def _release_clause_for(player: Player, current_club: Club) -> float:
+    stored_clause = getattr(player.finance, "releaseClause", 0) or 0
+    if stored_clause > 0:
+        return float(stored_clause)
+    return round(player.finance.weeklySalary * 52 * max(3.0, current_club.prestige / 10), 2)
+
+
+def _window_reason(player: Player, score: float, snapshot: SeasonSnapshot) -> str | None:
+    years = player.finance.contractYears
+    tags = set(player.tags or [])
+    if years <= 0:
+        return "free_agent"
+    if years <= 1:
+        return "transfer_request" if "requested_transfer" in tags else "expiring_contract"
+    if "requested_transfer" in tags and score >= 45:
+        return "transfer_request"
+    if score >= 180:
+        return "release_clause"
+    if snapshot.minutesPlayed < 700 and years > 1 and player.state.reputation >= 25:
+        return "loan"
+    return None
+
+
 def _eligible_pool(current_club: Club, score: float) -> list[Club]:
     current = current_club.prestige
     pool: list[Club] = []
@@ -161,17 +184,28 @@ def compute_transfer_window(
     r = rng or random.Random()
 
     score = _attractiveness_score(player, snapshot)
+    reason = _window_reason(player, score, snapshot)
+    if not reason:
+        return None
+
     num = _number_of_offers(score)
+    if reason == "free_agent":
+        num = max(2, num)
+    elif reason == "loan":
+        num = 1
     if num == 0:
         return None
 
     pool = _eligible_pool(current_club, score)
+    if reason == "loan":
+        pool = [club for club in pool if club.prestige <= current_club.prestige + 8]
     if not pool:
         return None
 
     picks = r.sample(pool, min(num, len(pool)))
     picks.sort(key=lambda c: -c.prestige)
 
+    release_clause = _release_clause_for(player, current_club)
     offers: list[TransferOffer] = []
     for club in picks:
         league = get_league(club.league_id)
@@ -181,28 +215,71 @@ def compute_transfer_window(
             base_salary *= 1.25
         elif chance == "backup":
             base_salary *= 0.7
-        sign_on = base_salary * (14 if club.prestige >= 85 else 9)
+        sign_on_multiplier = 18 if reason == "free_agent" else (14 if club.prestige >= 85 else 9)
+        sign_on = base_salary * sign_on_multiplier
+        transfer_fee = 0.0
+        pays_release_clause = False
+        transfer_kind = "transfer"
+        offer_clause = None
+
+        if reason == "free_agent":
+            transfer_kind = "free_agent"
+        elif reason == "loan":
+            transfer_kind = "loan"
+            base_salary *= 0.85
+            sign_on = base_salary * 3
+        elif player.finance.contractYears > 1:
+            pays_release_clause = True
+            offer_clause = release_clause
+            transfer_fee = round(release_clause * r.uniform(1.0, 1.18), 2)
+
+        note = _generate_note(club, player, current_club, chance, r)
+        if reason == "release_clause":
+            note += " El club comprador está dispuesto a pagar la cláusula de rescisión."
+        elif reason == "free_agent":
+            note += " Llegás libre: no hay fee de transferencia y tu prima de firma sube."
+        elif reason == "loan":
+            note += " Es una cesión para recuperar minutos sin romper tu contrato actual."
+        elif reason == "expiring_contract":
+            note += " Tu contrato entra en su último año y el club escucha ofertas."
+        elif reason == "transfer_request":
+            note += " Tu pedido de salida obligó al club a sentarse a negociar."
+
         offers.append(
             TransferOffer(
                 id=str(uuid4()),
                 club=_club_info(club),
                 weeklySalary=round(base_salary, 2),
-                contractYears=r.choice([2, 3, 3, 4, 4, 5]),
+                contractYears=1 if transfer_kind == "loan" else r.choice([2, 3, 3, 4, 4, 5]),
                 signOnBonus=round(sign_on, 2),
                 playingChance=chance,
                 reputationRequired=max(0, club.prestige - 15),
-                note=_generate_note(club, player, current_club, chance, r),
-                highlight=_highlight(club, current_club),
+                note=note,
+                highlight=_highlight(club, current_club) or ("📝 Libre" if reason == "free_agent" else "🔐 Cláusula" if reason == "release_clause" else ""),
+                transferKind=transfer_kind,
+                transferFee=transfer_fee,
+                releaseClause=offer_clause,
+                paysReleaseClause=pays_release_clause,
             )
         )
 
     stay_note = _stay_note(player, current_club, offers)
+    if reason == "free_agent":
+        stay_note = "Terminó tu contrato. Si tu club quiere retenerte, tiene que competir como uno más."
+    elif reason == "loan":
+        stay_note = "Podés quedarte y pelearla, pero una cesión te daría minutos reales."
+    elif reason == "release_clause":
+        stay_note = f"Tenés contrato por {player.finance.contractYears} años más. Solo una cláusula pagada puede sacarte sin que el club bloquee la operación."
+
     return TransferWindow(
         id=str(uuid4()),
         label=f"Ventana de fichajes — verano {player.seasonYear}",
-        currentClub=_club_info(current_club),
+        currentClub=None if reason == "free_agent" else _club_info(current_club),
         stayNote=stay_note,
         offers=offers,
+        reason=reason,
+        contractYearsRemaining=max(0, player.finance.contractYears),
+        renewalOfferYears=3 if player.finance.contractYears <= 1 and reason != "loan" else None,
     )
 
 
@@ -235,6 +312,10 @@ def apply_transfer(player: Player, offer: TransferOffer) -> dict:
     player.finance.signOnBonus = float(offer.signOnBonus)
     player.finance.balance += float(offer.signOnBonus)
     player.finance.contractYears = int(offer.contractYears)
+    player.finance.releaseClause = round(
+        player.finance.weeklySalary * 52 * max(3.0, new_club.prestige / 10),
+        2,
+    )
 
     player.relationships.coach = 55.0
     player.relationships.teammates = 45.0
@@ -256,6 +337,8 @@ def apply_transfer(player: Player, offer: TransferOffer) -> dict:
         player.state.happiness = min(100, player.state.happiness + 5)
 
     tags = set(player.tags or [])
+    if offer.transferKind == "loan":
+        tags.add("loan_move")
     if new_club.league_id != (current_club.league_id if current_club else ""):
         league = get_league(new_club.league_id)
         if league and league.country in {"ES", "EN", "IT", "DE", "FR", "PT", "NL"}:
@@ -273,5 +356,12 @@ def apply_transfer(player: Player, offer: TransferOffer) -> dict:
 
 
 def stay_at_club(player: Player) -> dict:
-    player.finance.contractYears = min(5, player.finance.contractYears + 1)
+    renewal_years = 3 if player.finance.contractYears <= 1 else player.finance.contractYears
+    player.finance.contractYears = min(5, renewal_years)
+    current_club = get_club(player.clubId) if player.clubId else None
+    if current_club:
+        player.finance.releaseClause = _release_clause_for(player, current_club)
+    tags = set(player.tags or [])
+    tags.discard("requested_transfer")
+    player.tags = sorted(tags)
     return {"renewed": True, "clubId": player.clubId}

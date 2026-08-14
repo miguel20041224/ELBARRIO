@@ -32,6 +32,7 @@ from app.modules.career.service import advance_season, play_match
 from app.modules.transfers.service import (
     apply_transfer,
     compute_transfer_window,
+    stay_at_club,
 )
 from app.schemas import CreationDraft, Fixture, PendingChain, SeasonProgress, SeasonSnapshot
 
@@ -223,6 +224,7 @@ def test_advance_season_generates_fixtures_for_displayed_next_season():
     db = SessionLocal()
     try:
         p = build_player_from_draft(make_draft(startingClub="esp-realmadrid"))
+        p.finance.contractYears = 3
         old_progress = ensure_season_fixtures(p, SeasonProgress(), 1)
         old_progress.matchesPlayed = old_progress.matchesTotal
         old_progress.appearances = old_progress.matchesTotal
@@ -248,6 +250,7 @@ def test_advance_season_generates_fixtures_for_displayed_next_season():
         session = advance_season("advance-fixture-session", db)
 
         assert session.currentSeason == 2
+        assert session.player.finance.contractYears == 2
         assert session.seasonProgress.fixtures[0].opponentId == expected_next.opponentId
         assert session.seasonProgress.fixtures[0].competitionId == expected_next.competitionId
     finally:
@@ -376,9 +379,10 @@ def test_roulette_builds_and_applies_outcome():
     assert changed
 
 
-def test_transfer_window_generated_for_good_season():
+def test_transfer_window_generated_for_good_expiring_contract():
     p = build_player_from_draft(make_draft(startingClub="col-envigado", age=20))
     p.state.reputation = 65
+    p.finance.contractYears = 1
     snap = SeasonSnapshot(
         season=1, clubId=p.clubId, clubName="Envigado FC",
         matchesPlayed=32, goals=18, assists=8, minutesPlayed=2600,
@@ -392,6 +396,73 @@ def test_transfer_window_generated_for_good_season():
     # Offers should be bigger clubs (higher prestige)
     for offer in window.offers:
         assert offer.club.prestige >= 45 - 15
+
+
+def test_transfer_window_respects_multi_year_contract():
+    p = build_player_from_draft(make_draft(startingClub="col-envigado", age=20))
+    p.state.reputation = 65
+    p.finance.contractYears = 3
+    snap = SeasonSnapshot(
+        season=1, clubId=p.clubId, clubName="Envigado FC",
+        matchesPlayed=32, goals=18, assists=8, minutesPlayed=2600,
+        averageRating=7.6, wins=15, draws=10, losses=7,
+        trophies=[], individualAwards=[], keyEvents=[],
+    )
+
+    window = compute_transfer_window(p, snap, random.Random(3))
+
+    assert window is None
+
+
+def test_elite_multi_year_offer_requires_release_clause_payment():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid", age=24))
+    p.state.reputation = 94
+    p.finance.contractYears = 4
+    snap = SeasonSnapshot(
+        season=2, clubId=p.clubId, clubName="Real Madrid",
+        matchesPlayed=46, goals=34, assists=14, minutesPlayed=3900,
+        averageRating=8.8, wins=32, draws=8, losses=6,
+        trophies=["LaLiga EA Sports", "Champions League"],
+        individualAwards=["Balón de Oro"], keyEvents=[],
+    )
+
+    window = compute_transfer_window(p, snap, random.Random(1))
+
+    assert window is not None
+    assert window.reason == "release_clause"
+    assert window.contractYearsRemaining == 4
+    assert window.offers
+    assert all(offer.paysReleaseClause for offer in window.offers)
+    assert all(offer.releaseClause and offer.transferFee >= offer.releaseClause for offer in window.offers)
+
+
+def test_free_agent_window_when_contract_expires():
+    p = build_player_from_draft(make_draft(startingClub="col-envigado", age=23))
+    p.state.reputation = 55
+    p.finance.contractYears = 0
+    snap = SeasonSnapshot(
+        season=3, clubId=p.clubId, clubName="Envigado FC",
+        matchesPlayed=30, goals=12, assists=7, minutesPlayed=2300,
+        averageRating=7.3, wins=12, draws=9, losses=9,
+        trophies=[], individualAwards=[], keyEvents=[],
+    )
+
+    window = compute_transfer_window(p, snap, random.Random(4))
+
+    assert window is not None
+    assert window.reason == "free_agent"
+    assert window.currentClub is None
+    assert all(offer.transferKind == "free_agent" for offer in window.offers)
+    assert all(offer.transferFee == 0 for offer in window.offers)
+
+
+def test_stay_at_club_renews_expiring_contract_not_every_year():
+    p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+    p.finance.contractYears = 1
+
+    stay_at_club(p)
+
+    assert p.finance.contractYears == 3
 
 
 def test_transfer_window_none_for_bad_rookie():

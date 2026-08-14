@@ -48,6 +48,11 @@ from app.schemas import (
 RECENT_MATCH_LIMIT = 8
 
 
+def _tick_contract_year(player: Player) -> None:
+    if player.clubId and player.finance.contractYears > 0:
+        player.finance.contractYears = max(0, player.finance.contractYears - 1)
+
+
 def _club_info(club_id: str | None) -> ClubInfo | None:
     if not club_id:
         return None
@@ -348,6 +353,8 @@ def advance_season(session_id: str, db: Session) -> CareerSession | None:
     if individual_awards:
         player.trophies.extend(individual_awards)
         snapshot.individualAwards = snapshot_award_names(individual_awards)
+
+    _tick_contract_year(player)
 
     active_sanctions, expired_ids = decrement_sanctions(player.sanctions)
     player.sanctions = active_sanctions

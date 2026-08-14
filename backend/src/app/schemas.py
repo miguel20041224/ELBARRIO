@@ -98,6 +98,7 @@ class PlayerFinance(BaseModel):
     weeklySalary: float
     contractYears: int
     signOnBonus: float
+    releaseClause: float = 0.0
 
 
 class PlayerRelationships(BaseModel):
@@ -345,6 +346,10 @@ class TransferOffer(BaseModel):
     reputationRequired: float
     note: str
     highlight: str = ""
+    transferKind: Literal["transfer", "free_agent", "loan"] = "transfer"
+    transferFee: float = 0.0
+    releaseClause: float | None = None
+    paysReleaseClause: bool = False
 
 
 class TransferWindow(BaseModel):
@@ -353,6 +358,9 @@ class TransferWindow(BaseModel):
     currentClub: ClubInfo | None
     stayNote: str
     offers: list[TransferOffer]
+    reason: Literal["expiring_contract", "release_clause", "transfer_request", "free_agent", "loan"] = "expiring_contract"
+    contractYearsRemaining: int = 0
+    renewalOfferYears: int | None = None
 
 
 class AcceptTransferPayload(BaseModel):

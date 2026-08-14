@@ -644,6 +644,7 @@ EVENTS: list[GameEvent] = [
                         reason="Tu pedido de salida abrió puertas.",
                     ),
                 ],
+                tags=["requested_transfer"],
             ),
         ],
         weight=1.0,
