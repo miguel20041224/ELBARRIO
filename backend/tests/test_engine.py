@@ -20,7 +20,7 @@ from app.modules.events.library import EVENTS, get_event
 from app.modules.events.selector import draw_event_for, should_offer_event
 from app.modules.player.factory import build_player_from_draft
 from app.modules.roulette.service import apply_outcome, build_roulette, find_outcome
-from app.modules.simulation.match import simulate_match
+from app.modules.simulation.match import build_match_selection, simulate_match
 from app.modules.simulation.season import (
     build_league_table,
     build_season_fixtures,
@@ -285,6 +285,37 @@ def test_simulate_match_uses_fixture_metadata():
     assert match.opponentId == "col-nacional"
     assert match.homeAway == "neutral"
     assert match.isClasico is True
+
+
+
+def test_match_selection_preview_explains_likely_role():
+    p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+    p.state.reputation = 85
+    p.relationships.coach = 85
+    p.state.fitness = 90
+    p.state.form = 80
+
+    selection = build_match_selection(p)
+
+    assert selection.role == "starter"
+    assert selection.starterChance >= 58
+    assert selection.expectedMinutesMax == 90
+    assert selection.factors
+
+
+def test_match_selection_preview_can_show_bench_risk():
+    p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+    p.state.reputation = 10
+    p.relationships.coach = 20
+    p.state.fitness = 35
+    p.state.form = 35
+
+    selection = build_match_selection(p)
+
+    assert selection.role in {"substitute", "bench"}
+    assert selection.starterChance < 58
+    assert any("DT" in factor or "Físico" in factor for factor in selection.factors)
+
 
 def test_simulate_single_match_produces_result():
     p = build_player_from_draft(make_draft())

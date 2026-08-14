@@ -346,6 +346,18 @@ export interface TransferWindow {
 
 export type CareerMode = "player" | "manager";
 
+export type MatchSelectionRole = "starter" | "substitute" | "bench";
+
+export interface MatchSelection {
+  role: MatchSelectionRole;
+  starterChance: number;
+  substituteChance: number;
+  expectedMinutesMin: number;
+  expectedMinutesMax: number;
+  coachMessage: string;
+  factors: string[];
+}
+
 export interface CareerSession {
   id: string;
   player: Player;
@@ -361,6 +373,7 @@ export interface CareerSession {
   seasonProgress: SeasonProgress;
   seasonComplete: boolean;
   currentClub: ClubInfo | null;
+  nextMatchSelection: MatchSelection | null;
 }
 
 export interface SeasonSnapshot {

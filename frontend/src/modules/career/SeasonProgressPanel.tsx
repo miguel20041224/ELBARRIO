@@ -1,8 +1,9 @@
 import clsx from "clsx";
-import type { MatchResult, SeasonProgress } from "@/types/game";
+import type { MatchResult, MatchSelection, SeasonProgress } from "@/types/game";
 
 interface Props {
   progress: SeasonProgress;
+  selection: MatchSelection | null;
   seasonComplete: boolean;
   season: number;
   busy: boolean;
@@ -12,6 +13,7 @@ interface Props {
 
 export default function SeasonProgressPanel({
   progress,
+  selection,
   seasonComplete,
   season,
   busy,
@@ -93,6 +95,10 @@ export default function SeasonProgressPanel({
                 : ""}
           </p>
         </div>
+      )}
+
+      {selection && nextFixture && (
+        <SelectionCard selection={selection} opponent={nextFixture.opponentShortName} />
       )}
 
       {competitionProgress.length > 0 && (
@@ -182,6 +188,59 @@ export default function SeasonProgressPanel({
             ))}
           </ul>
         </div>
+      )}
+    </div>
+  );
+}
+
+
+function SelectionCard({
+  selection,
+  opponent,
+}: {
+  selection: MatchSelection;
+  opponent: string;
+}) {
+  const roleLabel = {
+    starter: "Titular probable",
+    substitute: "Cambio probable",
+    bench: "Banco probable",
+  }[selection.role];
+  const roleTone = {
+    starter: "text-barrio-accent",
+    substitute: "text-barrio-gold",
+    bench: "text-barrio-muted",
+  }[selection.role];
+
+  return (
+    <div className="rounded border border-barrio-gold/40 bg-barrio-gold/10 px-4 py-3 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-barrio-muted">
+            Convocatoria vs {opponent}
+          </p>
+          <p className={clsx("font-display text-xl", roleTone)}>{roleLabel}</p>
+        </div>
+        <div className="text-right text-xs text-barrio-muted">
+          <p>{selection.starterChance}% titular</p>
+          <p>{selection.substituteChance}% entrar</p>
+        </div>
+      </div>
+      <p className="mt-2 text-barrio-text/90">{selection.coachMessage}</p>
+      <p className="mt-1 text-xs text-barrio-muted">
+        Minutos esperados: {selection.expectedMinutesMin}-{selection.expectedMinutesMax}'
+      </p>
+      {selection.factors.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-2 text-[11px] text-barrio-muted">
+          {selection.factors.map((factor) => (
+            <li
+              key={factor}
+              className="rounded-full border border-barrio-border/70 px-2 py-1"
+            >
+              {factor}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

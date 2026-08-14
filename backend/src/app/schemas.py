@@ -224,6 +224,16 @@ class CompetitionProgress(BaseModel):
     currentStage: str
 
 
+class MatchSelection(BaseModel):
+    role: Literal["starter", "substitute", "bench"]
+    starterChance: int
+    substituteChance: int
+    expectedMinutesMin: int
+    expectedMinutesMax: int
+    coachMessage: str
+    factors: list[str] = Field(default_factory=list)
+
+
 class MatchResult(BaseModel):
     matchNumber: int
     week: int = 0
@@ -405,3 +415,4 @@ class CareerSession(BaseModel):
     pendingRoulette: RouletteRoll | None = None
     pendingTransferWindow: TransferWindow | None = None
     currentClub: ClubInfo | None = None
+    nextMatchSelection: MatchSelection | None = None

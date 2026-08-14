@@ -1,20 +1,24 @@
 # ELBARRIO
 
-**ELBARRIO** is a football career simulator where every match, contract, transfer, scandal, award, and career decision can change the player’s story.
+**ELBARRIO** is a football career simulator about earning a player story one match at a time: create a player, join a club, fight for minutes, react to events, chase trophies, and navigate contracts, transfers, awards, and career-defining roulette moments.
 
-The project is still in active development, but the current version already includes a playable career loop with player creation, club selection, match-by-match progression, events, roulette outcomes, transfers, awards, and competition-aware fixtures.
+The current build is already playable as a match-by-match career loop. It is not just a generic season simulator: fixtures have context, the coach previews your role before matches, standings decide league outcomes, and contract state changes what transfer paths are realistic.
 
 ## What is playable now
 
-- Create a player with identity, country, position, physical profile, preferred foot, and starting league.
-- Start at a contextual club based on age, league, and club level.
-- Play the season match by match instead of simulating everything at once.
-- Face real clubs from the selected league catalog.
-- See fixture context: league, cup, continental competition, stage, venue, and clásicos.
-- Resolve career and life events with persistent consequences.
-- Trigger event chains with delayed follow-ups.
+- Create a player with identity, country, position, body profile, preferred foot, league, and team selection.
+- Progress through a career match by match instead of simulating the whole season at once.
+- Review the pre-match convocatoria/team-selection preview: starter, substitute, or bench chance, coach message, expected minutes, and selection factors.
+- Play fixtures with context: league, domestic cup, continental competition, stage, venue, and clásicos.
+- Track league table standings, with league trophies decided from the table.
+- Move through contract-aware transfer windows:
+  - contract years tick down by season,
+  - multi-year contracts block normal offers,
+  - elite seasons can trigger release-clause offers,
+  - expiring contracts and free-agent windows create different paths,
+  - renewals and low-minute loan reasons exist in the transfer flow.
 - Spin roulette moments at career and season milestones.
-- Receive transfer offers based on reputation, performance, age, and club fit.
+- Resolve events with chains, delayed consequences, and lasting career effects.
 - Earn team trophies and individual awards.
 
 ## Tech stack
@@ -43,7 +47,7 @@ ELBARRIO/
 │   │   │   ├── player/     Player factory and stat generation
 │   │   │   ├── roulette/   Roulette milestone outcomes
 │   │   │   ├── simulation/ Match and season simulation
-│   │   │   └── transfers/  Transfer window logic
+│   │   │   └── transfers/  Contract-aware transfer window logic
 │   │   └── schemas.py      Shared API schemas
 │   └── tests/              Backend regression tests
 ├── frontend/
@@ -90,39 +94,40 @@ This starts the frontend, backend, and PostgreSQL service together.
 ## Validation
 
 ```bash
-cd backend
-export PATH="$HOME/.local/bin:$PATH"
-poetry run pytest
-```
-
-```bash
 cd frontend
 npm run build
 ```
 
-Current verified status:
+```bash
+cd backend
+export PATH="$HOME/.local/bin:$PATH"
+poetry install
+poetry run pytest
+```
 
-- Backend tests: `29 passed`
-- Frontend production build: passing
+Current verified status for this session:
+
+- Frontend production build: passing.
+- Backend tests: present, but not claimed as passing in this session because local backend dependencies were not installed here.
 
 ## Current roadmap
 
 - [x] Player creation and core career session
-- [x] Club and league catalog
+- [x] League and team selection during player creation
 - [x] Match-by-match season progression
+- [x] Pre-match convocatoria/team-selection preview
+- [x] Fixture context for league, cup, continental matches, stages, venues, and clásicos
+- [x] League table standings and league trophies decided from the table
 - [x] Event system with consequences and follow-up chains
-- [x] Roulette milestone outcomes
-- [x] Transfer windows with contextual offers
-- [x] Competition-aware fixtures for league, domestic cup, and continental matches
-- [ ] League tables and trophies decided by real standings
-- [ ] Contract clock, clauses, renewals, free agency, and loans
+- [x] Roulette outcomes at career and season milestones
+- [x] Contract-aware transfer windows, renewals, release clauses, free agency, and loan reasons
+- [x] Team trophies and individual awards
 - [ ] National team competitions
 - [ ] Expanded event library
-- [ ] Expanded awards system
 - [ ] Authentication, persistent accounts, and deployment pipeline
 
 ## Design direction
 
 ELBARRIO is built around one principle: the career should feel earned.
 
-A small club can have a miracle season. A superstar can get trapped by a bad contract. A great run can open Europe. A bad choice can damage the coach relationship, press image, or fitness. The goal is not only to calculate stats, but to create a football story that reacts to the player’s path.
+A small club can have a miracle season. A young player can sit on the bench until the coach trusts him. A superstar can get trapped by a bad contract unless a release clause appears. A great run can open Europe. A bad choice can damage the coach relationship, press image, happiness, or fitness. The goal is not only to calculate stats, but to create a football story that reacts to the player’s path.

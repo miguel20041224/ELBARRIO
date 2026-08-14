@@ -1,6 +1,6 @@
 import random
 from app.modules.clubs.data import Club, get_club, get_clubs_for_league
-from app.schemas import Fixture, MatchResult, Player
+from app.schemas import Fixture, MatchResult, MatchSelection, Player
 
 
 GOAL_RATE_BY_POSITION: dict[str, float] = {
@@ -43,21 +43,81 @@ def _pick_opponent(player_club: Club, rng: random.Random) -> Club:
     return rng.choice(league_clubs)
 
 
-def _minutes(player: Player, rng: random.Random) -> tuple[int, bool]:
+def _selection_chances(player: Player) -> tuple[float, float]:
     rookie = _rookie_factor(player)
     coach_relation = player.relationships.coach / 100
     fitness = player.state.fitness / 100
-    form = player.state.form / 100
     starter_chance = 0.15 + rookie * 0.55 + (coach_relation - 0.5) * 0.4 + (fitness - 0.6) * 0.3
     starter_chance = max(0.05, min(0.95, starter_chance))
+    sub_chance = 0.35 + rookie * 0.4 + (coach_relation - 0.5) * 0.3
+    sub_chance = max(0.1, min(0.9, sub_chance))
+    return starter_chance, sub_chance
+
+
+def build_match_selection(player: Player, fixture: Fixture | None = None) -> MatchSelection:
+    starter_chance, sub_chance = _selection_chances(player)
+    starter_pct = round(starter_chance * 100)
+    substitute_pct = round((1 - starter_chance) * sub_chance * 100)
+    role = "bench"
+    minutes_min = 0
+    minutes_max = 15
+    if starter_pct >= 58:
+        role = "starter"
+        minutes_min = 60
+        minutes_max = 90
+    elif starter_pct + substitute_pct >= 48:
+        role = "substitute"
+        minutes_min = 15
+        minutes_max = 45
+
+    factors: list[str] = []
+    if player.relationships.coach >= 70:
+        factors.append("El DT confía en vos")
+    elif player.relationships.coach <= 40:
+        factors.append("Relación tensa con el DT")
+    if player.state.fitness >= 75:
+        factors.append("Buen estado físico")
+    elif player.state.fitness <= 45:
+        factors.append("Físico comprometido")
+    if player.state.form >= 75:
+        factors.append("Venís en buena forma")
+    elif player.state.form <= 45:
+        factors.append("Necesitás levantar la forma")
+    if player.state.reputation >= 70:
+        factors.append("Tu reputación pesa en la convocatoria")
+    elif player.state.reputation <= 30:
+        factors.append("Todavía estás ganando lugar")
+    if fixture and fixture.isClasico:
+        factors.append("Clásico: el margen de error baja")
+
+    if role == "starter":
+        coach_message = "El DT te perfila como titular para este partido."
+    elif role == "substitute":
+        coach_message = "El DT te ve como cambio probable; entrá y ganate más minutos."
+    else:
+        coach_message = "Hoy arrancás peleando desde el banco; necesitás señales fuertes para entrar."
+
+    return MatchSelection(
+        role=role,
+        starterChance=starter_pct,
+        substituteChance=substitute_pct,
+        expectedMinutesMin=minutes_min,
+        expectedMinutesMax=minutes_max,
+        coachMessage=coach_message,
+        factors=factors[:4],
+    )
+
+
+def _minutes(player: Player, rng: random.Random) -> tuple[int, bool]:
+    starter_chance, sub_chance = _selection_chances(player)
+    form = player.state.form / 100
 
     if rng.random() < starter_chance:
         base = 82 + (form - 0.6) * 10
         minutes = max(55, min(90, int(rng.gauss(base, 6))))
         return minutes, True
 
-    sub_chance = 0.35 + rookie * 0.4 + (coach_relation - 0.5) * 0.3
-    if rng.random() < max(0.1, min(0.9, sub_chance)):
+    if rng.random() < sub_chance:
         minutes = max(5, min(45, int(rng.gauss(22, 12))))
         return minutes, False
     return 0, False

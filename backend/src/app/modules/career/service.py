@@ -23,7 +23,7 @@ from app.modules.roulette.service import (
     build_roulette,
     find_outcome,
 )
-from app.modules.simulation.match import simulate_match
+from app.modules.simulation.match import build_match_selection, simulate_match
 from app.modules.simulation.season import close_season, ensure_season_fixtures, refresh_league_table
 from app.modules.transfers.service import (
     apply_transfer,
@@ -91,6 +91,10 @@ def _to_response(model: CareerSessionModel) -> CareerSession:
         else None
     )
     season_complete = progress.matchesPlayed >= progress.matchesTotal
+    next_fixture = progress.fixtures[progress.matchesPlayed] if not season_complete and progress.fixtures else None
+    next_selection = None
+    if next_fixture and not (model.pending_roulette or model.pending_transfer_window or model.pending_event_id):
+        next_selection = build_match_selection(player, next_fixture)
     return CareerSession(
         id=model.id,
         player=player,
@@ -106,6 +110,7 @@ def _to_response(model: CareerSessionModel) -> CareerSession:
         pendingRoulette=roulette,
         pendingTransferWindow=transfer,
         currentClub=_club_info(player.clubId),
+        nextMatchSelection=next_selection,
     )
 
 

@@ -100,6 +100,7 @@ export default function CareerPage() {
         ) : (
           <SeasonProgressPanel
             progress={session.seasonProgress}
+            selection={session.nextMatchSelection}
             seasonComplete={session.seasonComplete}
             season={session.currentSeason}
             busy={busy}
