@@ -1,0 +1,61 @@
+[
+ {
+  "test": "T1 GET puro",
+  "status": "PASS",
+  "detail": "6 GET consecutivos devuelven exactamente lo mismo"
+ },
+ {
+  "test": "T2 play-match repetido",
+  "status": "FAIL",
+  "detail": "3 POST idénticos consecutivos avanzaron 3 partidos (sin clave de idempotencia)"
+ },
+ {
+  "test": "T3 play-match concurrente",
+  "status": "FAIL",
+  "detail": "8/8 respuestas 200 pero el progreso avanzó 1 partidos (7 perdidos)",
+  "goles_en_progress": 1,
+  "goles_en_player": 1
+ },
+ {
+  "test": "T4 advance-season concurrente",
+  "status": "PASS",
+  "detail": "6 cierres simultáneos -> 1 snapshots, edad +1, temporada +1",
+  "temporadas_en_history": [
+   1
+  ],
+  "snapshots_duplicados": false
+ },
+ {
+  "test": "T6 carrera inexistente",
+  "status": "PASS",
+  "detail": "GET de un ID inexistente devuelve 404"
+ },
+ {
+  "test": "T6b play-match sobre ID inexistente",
+  "status": "PASS",
+  "detail": "devuelve 404"
+ },
+ {
+  "test": "T7 cliente desactualizado",
+  "status": "FAIL",
+  "detail": "la pestaña vieja cree que van 0 partidos, el servidor 5; la API no expone versión ni ETag para detectarlo"
+ },
+ {
+  "test": "T8 diferencia de gol de la tabla",
+  "status": "FAIL",
+  "detail": "tabla dice PJ=30 GF=3 GC=11; los partidos reales dan PJ=30 GF=40 GC=67",
+  "puntos_tabla": 22,
+  "puntos_reales": 22
+ },
+ {
+  "test": "T5 persistencia tras reinicio",
+  "status": "PASS",
+  "detail": "el estado sobrevive a un engine nuevo sobre la misma base",
+  "divergencias": null
+ },
+ {
+  "test": "T5b respuesta idéntica tras reinicio",
+  "status": "PASS",
+  "detail": "respuesta byte a byte idéntica"
+ }
+]

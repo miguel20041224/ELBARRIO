@@ -102,16 +102,16 @@ Required backend environment variables:
 
 ```env
 ENVIRONMENT=production
-DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE
-CORS_ORIGINS=["https://your-frontend.vercel.app"]
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
+CORS_ORIGINS=https://your-frontend.vercel.app
 ```
 
 Notes:
 
 - Health check path: `/health`
 - Render and Railway provide `PORT`; the Docker command uses `${PORT:-8000}`.
-- `CORS_ORIGINS` must contain the exact frontend origin only, not `/api` or another path.
-- Use the `postgresql+psycopg://` URL scheme in production. If a host gives you `postgresql://...`, change only the scheme to `postgresql+psycopg://...` so SQLAlchemy uses the synchronous psycopg driver installed by the Docker image.
+- `CORS_ORIGINS` must contain the exact frontend origin only, not `/api` or another path. Plain text, comma-separated, and JSON list forms are all accepted.
+- Paste `DATABASE_URL` exactly as the host gives it. Both `postgres://` and `postgresql://` are rewritten at startup to `postgresql+psycopg://`, the driver the Docker image installs.
 
 ### Frontend on Vercel
 
@@ -121,7 +121,11 @@ Set this Vercel environment variable for the frontend project:
 VITE_API_URL=https://<backend-host>/api
 ```
 
+`VITE_API_URL` is baked into the bundle at build time, so changing it requires a redeploy. A build without it fails on purpose instead of shipping a bundle that calls `localhost`.
+
 After Vercel gives you the production frontend URL, add that origin to the backend `CORS_ORIGINS` value and redeploy the backend if needed.
+
+**Full reference: [`docs/DEPLOY.md`](docs/DEPLOY.md)** — every variable per environment, accepted `CORS_ORIGINS` formats, preview-domain regex, expected startup logs, and a troubleshooting table.
 
 ## Validation
 
@@ -137,10 +141,18 @@ poetry install
 poetry run pytest
 ```
 
-Current verified status for this session:
+Network smoke test (CORS preflight, real request headers, create/read a career). Works against localhost or a live deployment:
+
+```bash
+./scripts/smoke-network.sh
+./scripts/smoke-network.sh https://your-api.onrender.com https://your-frontend.vercel.app
+```
+
+Current verified status:
 
 - Frontend production build: passing.
-- Backend tests: present, but not claimed as passing in this session because local backend dependencies were not installed here.
+- Backend tests: 77 passing.
+- Network smoke test against a local production-like build: 8/8 checks passing.
 
 ## Current roadmap
 

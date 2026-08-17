@@ -1,0 +1,55 @@
+OVR63
+ARG
+#9 DC
+InstitutoInstituto
+Edad
+18
+Valor€510K
+PJ
+85
+Gls
+13
+Ast
+4
+🏆Vitrina vacía
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porGodoy Cruz
+Primera Nacional
+Fichar porAldosivi
+Liga Profesional
+Quedarse enInstituto
+Liga Profesional
+Edad
+Club
+OVRPJGlsAst
+16
+Instituto
+50
+31
+3
+1
+18
+Instituto
+57
+54
+10
+3
+20
+?
+Eligiendo club...
+22
+24
+26
+28
+30
+32
+34
+36
+38
+Argentina
+0
+0
+0
+Descenso
+Ver logros

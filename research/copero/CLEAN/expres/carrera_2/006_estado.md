@@ -1,0 +1,50 @@
+OVR77
+ARG
+#9 DC
+TalleresTalleres
+Edad
+19
+Valor€1.8M
+PJ
+127
+Gls
+28
+Ast
+10
+🏆Vitrina vacía
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porSan Lorenzo
+Liga Profesional
+Fichar porArgentinos Jrs.
+Liga Profesional
+Quedarse enTalleres
+Liga Profesional
+Edad
+Club
+OVRPJGlsAst
+16
+Talleres
+50
+31
+1
+1
+19
+Talleres
+66
+96
+27
+9
+22
+?
+Decisión de carrera...
+25
+28
+31
+34
+37
+Argentina
+0
+0
+0
+Ver logros

@@ -1,0 +1,60 @@
+OVR72
+COL
+#10 MCO
+NacionalNacional
+Alianza LimaAlianza Lima
+Edad
+22
+Valor€4.7M
+PJ
+158
+Gls
+28
+Ast
+21
+🏆Vitrina vacía
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porVélez
+Liga Profesional
+Fichar porAlianza Lima
+Liga1
+Quedarse enNacional
+Liga Dimayor
+Edad
+Club
+OVRPJGlsAst
+16
+Tolima
+50
+33
+3
+1
+18
+Nacional
+56
+44
+5
+3
+20
+Alianza Lima
+70
+81
+20
+17
+22
+?
+Eligiendo club...
+24
+26
+28
+30
+32
+34
+36
+38
+Colombia
+0
+0
+0
+Ver logros

@@ -1,0 +1,51 @@
+OVR55
+COL
+#10 MCO
+?
+Libre
+TolimaTolima
+Edad
+16
+Valor€100K
+PJ
+33
+Gls
+3
+Ast
+1
+🏆Vitrina vacía
+## Oferta de cantera
+Tres clubes quieren sumarte a su proyecto juvenil. Elegí dónde empieza tu carrera.
+Fichar porTolima
+Liga Dimayor
+Fichar porFortaleza CEIF
+Liga Dimayor
+Fichar porNacional
+Liga Dimayor
+Edad
+Club
+OVRPJGlsAst
+16
+Tolima
+50
+33
+3
+1
+18
+?
+Eligiendo club...
+20
+22
+24
+26
+28
+30
+32
+34
+36
+38
+Colombia
+0
+0
+0
+Ver logros

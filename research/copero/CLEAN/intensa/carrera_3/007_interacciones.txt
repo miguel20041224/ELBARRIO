@@ -1,0 +1,71 @@
+OVR63
+BRA
+#11 EI
+ChapecoenseChapecoense
+Godoy CruzGodoy Cruz
+Edad
+19
+Valor€1.1M
+PJ
+46
+Gls
+5
+Ast
+2
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porRemo
+Brasileirão
+Fichar porGodoy Cruz
+Primera Nacional
+Quedarse enChapecoense
+Brasileirão
+Edad
+Club
+OVRPJGlsAst
+16
+Corinthians
+50
+11
+0
+0
+17
+Chapecoense
+53
+17
+2
+1
+18
+Godoy Cruz
+57
+18
+3
+1
+19
+?
+Eligiendo club...
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+Brasil
+0
+0
+0
+Ver logros

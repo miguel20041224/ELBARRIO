@@ -1,0 +1,55 @@
+OVR64
+BRA
+#11 EI
+RemoRemo
+ChapecoenseChapecoense
+Edad
+18
+Valor€980K
+PJ
+90
+Gls
+17
+Ast
+5
+🏆Vitrina vacía
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porChapecoense
+Brasileirão
+Fichar porTáchira
+Liga FUTVE
+Quedarse enRemo
+Brasileirão
+Edad
+Club
+OVRPJGlsAst
+16
+Remo
+50
+33
+4
+1
+18
+Chapecoense
+61
+57
+13
+4
+20
+?
+Eligiendo club...
+22
+24
+26
+28
+30
+32
+34
+36
+38
+Brasil
+0
+0
+0
+Ver logros

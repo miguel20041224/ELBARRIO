@@ -1,0 +1,66 @@
+OVR57
+BRA
+#11 EI
+CorinthiansCorinthians
+ChapecoenseChapecoense
+Edad
+18
+Valor€520K
+PJ
+28
+Gls
+2
+Ast
+1
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porDeportivo Garcilaso
+Liga1
+Fichar porChapecoense
+Brasileirão
+Quedarse enCorinthians
+Brasileirão
+Edad
+Club
+OVRPJGlsAst
+16
+Corinthians
+50
+11
+0
+0
+17
+Chapecoense
+53
+17
+2
+1
+18
+?
+Eligiendo club...
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+Brasil
+0
+0
+0
+Ver logros

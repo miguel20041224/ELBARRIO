@@ -23,8 +23,10 @@ services:
       db:
         condition: service_healthy
     environment:
+      ENVIRONMENT: development
       DATABASE_URL: postgresql://elbarrio:elbarrio@db:5432/elbarrio
-      CORS_ORIGINS: '["http://localhost:5173"]'
+      # El origen es el del navegador del anfitrión, no el del contenedor.
+      CORS_ORIGINS: http://localhost:5173
     ports:
       - "8000:8000"
 

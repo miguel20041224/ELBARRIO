@@ -1,0 +1,51 @@
+OVR65
+BRA
+#11 EI
+FluminenseFluminense
+Edad
+19
+Valor€1.4M
+PJ
+23
+Gls
+0
+Ast
+0
+## Salida a préstamo
+Tu club quiere que sumes minutos en otro equipo. Elegí dónde seguir tu desarrollo.
+Préstamo enBelgrano
+Liga Profesional
+Préstamo enMirassol
+Brasileirão
+Préstamo enCoritiba
+Brasileirão
+Edad
+Club
+OVRPJGlsAst
+16
+Fluminense
+50
+23
+0
+0
+19
+Coritiba
+65
+0
+0
+0
+?
+Eligiendo club...
+22
+?
+Eligiendo club...
+25
+28
+31
+34
+37
+Brasil
+0
+0
+0
+Ver logros

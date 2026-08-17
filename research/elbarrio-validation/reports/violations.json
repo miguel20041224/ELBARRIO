@@ -1,0 +1,371 @@
+[
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 0,
+  "position": "ST",
+  "detail": "player.matchesPlayed=264 vs suma snapshot.matchesPlayed=358",
+  "diff": -94
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 0,
+  "position": "ST",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 4,
+  "match_index": 6,
+  "narrative": "Empataron 1-0 contra Sevilla de local. Jugaste 26' entrando desde el banco, clavaste 1 gol."
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 0,
+  "position": "ST",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 15,
+  "match_index": 10,
+  "narrative": "Empataron 1-0 contra Al-Ettifaq de visitante en Dammam. Jugaste 79' de titular, clavaste 1 gol."
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 0,
+  "position": "ST",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=72.0, stamina=65.0, vision=55.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 1,
+  "position": "CAM",
+  "detail": "player.matchesPlayed=509 vs suma snapshot.matchesPlayed=582",
+  "diff": -73
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 2,
+  "position": "CM",
+  "detail": "player.matchesPlayed=306 vs suma snapshot.matchesPlayed=476",
+  "diff": -170
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 3,
+  "position": "CB",
+  "detail": "player.matchesPlayed=385 vs suma snapshot.matchesPlayed=588",
+  "diff": -203
+ },
+ {
+  "invariant": "I19",
+  "severity": "MEDIO",
+  "career": 3,
+  "position": "CB",
+  "detail": "temporada 14: final ganada sin trofeo: ['FA Cup']",
+  "snapshotTrophies": []
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 4,
+  "position": "GK",
+  "detail": "player.matchesPlayed=368 vs suma snapshot.matchesPlayed=430",
+  "diff": -62
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 5,
+  "position": "LW",
+  "detail": "player.matchesPlayed=188 vs suma snapshot.matchesPlayed=450",
+  "diff": -262
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 6,
+  "position": "CDM",
+  "detail": "player.matchesPlayed=446 vs suma snapshot.matchesPlayed=530",
+  "diff": -84
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 7,
+  "position": "RB",
+  "detail": "player.matchesPlayed=492 vs suma snapshot.matchesPlayed=572",
+  "diff": -80
+ },
+ {
+  "invariant": "I19",
+  "severity": "MEDIO",
+  "career": 7,
+  "position": "RB",
+  "detail": "temporada 15: final ganada sin trofeo: ['Copa do Brasil']",
+  "snapshotTrophies": [
+   "Brasileirão Série A"
+  ]
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 8,
+  "position": "ST",
+  "detail": "player.matchesPlayed=331 vs suma snapshot.matchesPlayed=434",
+  "diff": -103
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 8,
+  "position": "ST",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 1,
+  "match_index": 0,
+  "narrative": "Empataron 1-0 contra Grêmio de local. Jugaste 15' entrando desde el banco, clavaste 1 gol."
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 8,
+  "position": "ST",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=72.0, stamina=65.0, vision=55.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 9,
+  "position": "CAM",
+  "detail": "player.matchesPlayed=419 vs suma snapshot.matchesPlayed=570",
+  "diff": -151
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 9,
+  "position": "CAM",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=72.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 10,
+  "position": "CM",
+  "detail": "player.matchesPlayed=424 vs suma snapshot.matchesPlayed=572",
+  "diff": -148
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 10,
+  "position": "CM",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 15,
+  "match_index": 35,
+  "narrative": "Empataron 1-0 contra Liverpool de visitante en Liverpool. Jugaste 82' de titular, clavaste 1 gol."
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 11,
+  "position": "CB",
+  "detail": "player.matchesPlayed=169 vs suma snapshot.matchesPlayed=450",
+  "diff": -281
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 12,
+  "position": "GK",
+  "detail": "player.matchesPlayed=330 vs suma snapshot.matchesPlayed=522",
+  "diff": -192
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 12,
+  "position": "GK",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=55.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 13,
+  "position": "LW",
+  "detail": "player.matchesPlayed=489 vs suma snapshot.matchesPlayed=560",
+  "diff": -71
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 13,
+  "position": "LW",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 7,
+  "match_index": 39,
+  "narrative": "Empataron 1-0 contra Ajax de visitante en Ámsterdam. Jugaste 90' de titular, clavaste 1 gol."
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 14,
+  "position": "CDM",
+  "detail": "player.matchesPlayed=313 vs suma snapshot.matchesPlayed=570",
+  "diff": -257
+ },
+ {
+  "invariant": "I19",
+  "severity": "MEDIO",
+  "career": 14,
+  "position": "CDM",
+  "detail": "temporada 11: final ganada sin trofeo: ['FA Cup']",
+  "snapshotTrophies": []
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 15,
+  "position": "RB",
+  "detail": "player.matchesPlayed=162 vs suma snapshot.matchesPlayed=494",
+  "diff": -332
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 16,
+  "position": "ST",
+  "detail": "player.matchesPlayed=411 vs suma snapshot.matchesPlayed=504",
+  "diff": -93
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 17,
+  "position": "CAM",
+  "detail": "player.matchesPlayed=346 vs suma snapshot.matchesPlayed=498",
+  "diff": -152
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 17,
+  "position": "CAM",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=72.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 18,
+  "position": "CM",
+  "detail": "player.matchesPlayed=218 vs suma snapshot.matchesPlayed=404",
+  "diff": -186
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 18,
+  "position": "CM",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 11,
+  "match_index": 0,
+  "narrative": "Empataron 1-0 contra Roma de local. Jugaste 83' de titular, clavaste 1 gol."
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 18,
+  "position": "CM",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=68.0, vision=65.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 19,
+  "position": "CB",
+  "detail": "player.matchesPlayed=283 vs suma snapshot.matchesPlayed=540",
+  "diff": -257
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 19,
+  "position": "CB",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=55.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 20,
+  "position": "GK",
+  "detail": "player.matchesPlayed=318 vs suma snapshot.matchesPlayed=542",
+  "diff": -224
+ },
+ {
+  "invariant": "I19",
+  "severity": "MEDIO",
+  "career": 20,
+  "position": "GK",
+  "detail": "temporada 15: final ganada sin trofeo: ['Copa do Brasil']",
+  "snapshotTrophies": []
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 21,
+  "position": "LW",
+  "detail": "player.matchesPlayed=448 vs suma snapshot.matchesPlayed=506",
+  "diff": -58
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 21,
+  "position": "LW",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 9,
+  "match_index": 0,
+  "narrative": "Empataron 1-0 contra Al-Hilal de local. Jugaste 42' entrando desde el banco, clavaste 1 gol."
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 22,
+  "position": "CDM",
+  "detail": "player.matchesPlayed=373 vs suma snapshot.matchesPlayed=522",
+  "diff": -149
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 22,
+  "position": "CDM",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=55.0)"
+ },
+ {
+  "invariant": "I03",
+  "severity": "CRITICO",
+  "career": 23,
+  "position": "RB",
+  "detail": "player.matchesPlayed=386 vs suma snapshot.matchesPlayed=500",
+  "diff": -114
+ },
+ {
+  "invariant": "I05",
+  "severity": "CRITICO",
+  "career": 23,
+  "position": "RB",
+  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "season": 11,
+  "match_index": 35,
+  "narrative": "Empataron 1-0 contra Inter de visitante en Milán. Jugaste 73' de titular, clavaste 1 gol."
+ },
+ {
+  "invariant": "I17",
+  "severity": "ALTO",
+  "career": 23,
+  "position": "RB",
+  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=68.0, vision=55.0)"
+ }
+]

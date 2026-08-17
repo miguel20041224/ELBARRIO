@@ -1,0 +1,71 @@
+OVR64
+COL
+#10 MCO
+MillonariosMillonarios
+Edad
+18
+Valor€650K
+PJ
+78
+Gls
+11
+Ast
+9
+🏆Vitrina vacía
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porDep. Cali
+Liga Dimayor
+Fichar porOnce Caldas
+Liga Dimayor
+Quedarse enMillonarios
+Liga Dimayor
+Edad
+Club
+OVRPJGlsAst
+16
+Nacional
+50
+7
+0
+0
+17
+Millonarios
+55
+34
+4
+3
+18
+Millonarios
+59
+37
+7
+6
+19
+?
+Eligiendo club...
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+Colombia
+0
+0
+0
+Ver logros

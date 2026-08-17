@@ -1,0 +1,57 @@
+OVR81
+BRA
+#11 EI
+FluminenseFluminense
+BolognaBologna
+Edad
+22
+Valor€26M
+PJ
+112
+Gls
+23
+Ast
+8
+## Regreso a tu club
+Volvés a tu club y vas a ser tenido en cuenta. Si igual querés salir, tenés dos ofertas para cambiar de aire.
+Fichar porParis FC
+Ligue 1
+Fichar porBologna
+Serie A
+Quedarse enFluminense
+Brasileirão
+Edad
+Club
+OVRPJGlsAst
+16
+Fluminense
+50
+23
+0
+0
+19
+Coritiba
+65
+89
+23
+8
+22
+Bologna
+81
+0
+0
+0
+?
+Eligiendo club...
+25
+?
+Eligiendo club...
+28
+31
+34
+37
+Brasil
+0
+0
+0
+Ver logros

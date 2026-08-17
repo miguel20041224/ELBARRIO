@@ -1,0 +1,46 @@
+OVR65
+BRA
+#11 EI
+?
+Libre
+FluminenseFluminense
+Edad
+19
+Valor€1.4M
+PJ
+23
+Gls
+0
+Ast
+0
+## Oferta de cantera
+Tres clubes quieren sumarte a su proyecto juvenil. Elegí dónde empieza tu carrera.
+Fichar porBotafogo
+Brasileirão
+Fichar porFluminense
+Brasileirão
+Fichar porCruzeiro
+Brasileirão
+Edad
+Club
+OVRPJGlsAst
+16
+Fluminense
+50
+23
+0
+0
+19
+?
+Eligiendo club...
+22
+25
+28
+31
+34
+37
+Brasil
+0
+0
+0
+Ver logros

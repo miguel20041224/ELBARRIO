@@ -1,0 +1,153 @@
+{
+ "byPosition": {
+  "CAM": {
+   "seasons": 45,
+   "goalsMean": 2.82,
+   "goalsMedian": 3,
+   "goalsMin": 0,
+   "goalsMax": 7,
+   "assistsMean": 5.89,
+   "minutesMean": 1503,
+   "matchesMean": 36.7,
+   "ratingMean": 6.24,
+   "trophiesTotal": 71
+  },
+  "CB": {
+   "seasons": 45,
+   "goalsMean": 0.33,
+   "goalsMedian": 0,
+   "goalsMin": 0,
+   "goalsMax": 3,
+   "assistsMean": 0.18,
+   "minutesMean": 793,
+   "matchesMean": 35.1,
+   "ratingMean": 5.96,
+   "trophiesTotal": 44
+  },
+  "CDM": {
+   "seasons": 45,
+   "goalsMean": 0.6,
+   "goalsMedian": 0,
+   "goalsMin": 0,
+   "goalsMax": 3,
+   "assistsMean": 1.49,
+   "minutesMean": 1318,
+   "matchesMean": 36.0,
+   "ratingMean": 6.03,
+   "trophiesTotal": 53
+  },
+  "CM": {
+   "seasons": 45,
+   "goalsMean": 0.69,
+   "goalsMedian": 0,
+   "goalsMin": 0,
+   "goalsMax": 4,
+   "assistsMean": 2.58,
+   "minutesMean": 1037,
+   "matchesMean": 32.3,
+   "ratingMean": 6.06,
+   "trophiesTotal": 58
+  },
+  "GK": {
+   "seasons": 45,
+   "goalsMean": 0.02,
+   "goalsMedian": 0,
+   "goalsMin": 0,
+   "goalsMax": 1,
+   "assistsMean": 0.02,
+   "minutesMean": 1118,
+   "matchesMean": 33.2,
+   "ratingMean": 5.94,
+   "trophiesTotal": 42
+  },
+  "LW": {
+   "seasons": 45,
+   "goalsMean": 3.38,
+   "goalsMedian": 3,
+   "goalsMin": 0,
+   "goalsMax": 12,
+   "assistsMean": 3.82,
+   "minutesMean": 1391,
+   "matchesMean": 33.7,
+   "ratingMean": 6.17,
+   "trophiesTotal": 58
+  },
+  "RB": {
+   "seasons": 45,
+   "goalsMean": 0.36,
+   "goalsMedian": 0,
+   "goalsMin": 0,
+   "goalsMax": 2,
+   "assistsMean": 1.11,
+   "minutesMean": 1256,
+   "matchesMean": 34.8,
+   "ratingMean": 6.01,
+   "trophiesTotal": 47
+  },
+  "ST": {
+   "seasons": 45,
+   "goalsMean": 3.96,
+   "goalsMedian": 3,
+   "goalsMin": 0,
+   "goalsMax": 9,
+   "assistsMean": 2.64,
+   "minutesMean": 1249,
+   "matchesMean": 28.8,
+   "ratingMean": 6.25,
+   "trophiesTotal": 68
+  }
+ },
+ "matches": {
+  "totalMatches": 12174,
+  "resultSplit": {
+   "W": "6221 (51.1%)",
+   "L": "4711 (38.7%)",
+   "D": "1242 (10.2%)"
+  },
+  "benchedShare": "31.2%",
+  "goalsPerMatch": {
+   "0": 11627,
+   "1": 547
+  },
+  "topScores": {
+   "2-1": 1222,
+   "3-0": 1007,
+   "3-1": 1007,
+   "2-0": 995,
+   "1-2": 929,
+   "0-2": 770,
+   "1-3": 733,
+   "0-3": 727
+  },
+  "competitions": {
+   "Premier League": 1860,
+   "Serie A TIM": 1350,
+   "Brasileirão Série A": 1290,
+   "Torneo BetPlay Dimayor": 1274,
+   "LaLiga EA Sports": 1260,
+   "Champions League": 780,
+   "Bundesliga": 690,
+   "Liga Profesional Argentina": 630,
+   "Liga BetPlay Dimayor": 456,
+   "Ligue 1 McDonald's": 392,
+   "FA Cup": 276,
+   "Copa Colombia": 272,
+   "Coppa Italia": 180,
+   "Copa do Brasil": 172,
+   "Copa del Rey": 168,
+   "Liga Portugal": 168,
+   "Liga MX BBVA": 132,
+   "Copa Libertadores": 120,
+   "Saudi Pro League": 112,
+   "Domestic Cup": 104,
+   "EFL Championship": 98,
+   "DFB-Pokal": 92,
+   "Copa Argentina": 88,
+   "Major League Soccer": 84,
+   "Coupe de France": 56,
+   "King Cup": 32,
+   "Eredivisie": 24,
+   "Primera Nacional": 14
+  }
+ }
+}

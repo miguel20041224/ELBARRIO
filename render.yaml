@@ -1,0 +1,37 @@
+# Blueprint de Render. Crea la base de datos y el servicio del backend.
+# El frontend NO va aquí: se despliega en Vercel (ver frontend/vercel.json).
+#
+# Uso: Render Dashboard > New > Blueprint > apuntar a este repositorio.
+services:
+  - type: web
+    name: elbarrio-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+
+      # Render inyecta la cadena de conexión de la base declarada abajo.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: elbarrio-db
+          property: connectionString
+
+      # Dominio del frontend. Hay que ponerlo a mano tras el primer deploy de
+      # Vercel. Se admite una URL suelta o varias separadas por comas.
+      - key: CORS_ORIGINS
+        sync: false
+
+      # Opcional: dominios de preview de Vercel, que cambian en cada commit.
+      # Ejemplo: ^https://elbarrio-[a-z0-9-]+\.vercel\.app$
+      - key: CORS_ORIGIN_REGEX
+        sync: false
+
+databases:
+  - name: elbarrio-db
+    plan: free
+    databaseName: elbarrio
+    user: elbarrio

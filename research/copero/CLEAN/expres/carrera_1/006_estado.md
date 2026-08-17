@@ -1,0 +1,51 @@
+OVR80
+COL
+#10 MCO
+Inter de BogotáInter de Bogotá
+PlatensePlatense
+Edad
+19
+Valor€3.1M
+PJ
+193
+Gls
+37
+Ast
+27
+🏆Vitrina vacía
+## Mercado de pases
+Llegaron ofertas después de tu último tramo de carrera. Podés aceptar una o quedarte en tu club.
+Fichar porNacional
+Liga Dimayor
+Fichar porPlatense
+Liga Profesional
+Quedarse enInter de Bogotá
+Liga Dimayor
+Edad
+Club
+OVRPJGlsAst
+16
+Inter de Bogotá
+50
+90
+13
+10
+19
+Platense
+69
+99
+23
+17
+22
+?
+Eligiendo club...
+25
+28
+31
+34
+37
+Colombia
+4
+1
+0
+Ver logros
