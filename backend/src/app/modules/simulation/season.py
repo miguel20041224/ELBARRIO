@@ -1,5 +1,7 @@
 import random
 from app.modules.clubs.data import CLUBS, Club, get_club, get_clubs_for_league, get_league
+from app.modules.player.factory import key_attributes_for
+from app.modules.simulation.development import develop_player
 from app.schemas import Fixture, LeagueTableEntry, MatchResult, Player, SeasonProgress, SeasonSnapshot, TrophyRecord
 
 
@@ -392,6 +394,26 @@ def _team_trophies_for_club(
     trophies.extend(_knockout_trophies(progress, club.league_id))
     return trophies
 
+def _next_reputation(
+    player: Player,
+    progress: SeasonProgress,
+    average_rating: float,
+    team_trophies: list[str],
+    club: Club | None,
+) -> float:
+    """Reputación que converge a lo que el jugador vale hoy.
+
+    Antes era puramente acumulativa y, como los ratings viven en una banda
+    estrecha, el signo casi nunca cambiaba: acababa clavada en 0 o en 100.
+    """
+    base = 15 + (club.prestige * 0.35 if club else 10)
+    performance = (average_rating - 6.0) * 18
+    output = min(20.0, (progress.goals + progress.assists) * 0.8)
+    silverware = min(15.0, len(team_trophies) * 7.0)
+    target = max(0.0, min(100.0, base + performance + output + silverware))
+    return round(player.state.reputation + (target - player.state.reputation) * 0.4, 1)
+
+
 def close_season(
     player: Player,
     progress: SeasonProgress,
@@ -419,12 +441,19 @@ def close_season(
                 )
             )
 
-    reputation_gain = (average_rating - 6.0) * 8 + (progress.goals * 0.5)
-    player.state.reputation = max(0, min(100, player.state.reputation + reputation_gain))
+    player.state.reputation = _next_reputation(player, progress, average_rating, team_trophies, club)
     player.state.fatigue = max(10, player.state.fatigue - 30)
     player.state.fitness = min(95, player.state.fitness + 15)
     player.state.form = 60
     player.age += 1
+
+    develop_player(
+        player,
+        minutes_played=progress.minutesPlayed,
+        average_rating=average_rating,
+        key_attributes=key_attributes_for(player.position),
+        rng=r,
+    )
 
     return SeasonSnapshot(
         season=season_number,

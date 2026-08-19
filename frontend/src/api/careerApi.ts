@@ -24,6 +24,10 @@ interface AcceptTransferPayload {
   offerId: string | null;
 }
 
+interface ResolveRetirementPayload {
+  retire: boolean;
+}
+
 export const careerApi = {
   listTeams: (leagueId: string) =>
     api.get<TeamOption[]>(`/leagues/${leagueId}/teams`),
@@ -40,6 +44,8 @@ export const careerApi = {
     api.post<CareerSession>(`/careers/${id}/advance-season`),
   acceptTransfer: (id: string, body: AcceptTransferPayload) =>
     api.post<CareerSession>(`/careers/${id}/accept-transfer`, body),
+  resolveRetirement: (id: string, body: ResolveRetirementPayload) =>
+    api.post<CareerSession>(`/careers/${id}/resolve-retirement`, body),
 };
 
 export type { CreateCareerPayload, ResolveEventPayload, EventChoice };

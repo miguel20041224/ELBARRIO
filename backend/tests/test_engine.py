@@ -18,7 +18,8 @@ from app.modules.decisions.engine import apply_choice
 from app.modules.events.chains import pop_ready_chain, queue_follow_ups
 from app.modules.events.library import EVENTS, get_event
 from app.modules.events.selector import draw_event_for, should_offer_event
-from app.modules.player.factory import build_player_from_draft
+from app.modules.player.factory import build_player_from_draft, key_attributes_for
+from app.modules.simulation.development import develop_player, should_offer_retirement
 from app.modules.roulette.service import apply_outcome, build_roulette, find_outcome
 from app.modules.simulation.match import build_match_selection, simulate_match
 from app.modules.simulation.season import (
@@ -763,6 +764,105 @@ def test_close_season_awards_league_to_table_champion():
     snap = close_season(p, progress, 1, rng=random.Random(2))
 
     assert "LaLiga EA Sports" in snap.trophies
+
+
+def _snapshot(**overrides) -> SeasonSnapshot:
+    base = dict(
+        season=1, clubId="esp-realmadrid", clubName="Real Madrid",
+        matchesPlayed=30, goals=10, assists=5, minutesPlayed=2400,
+        averageRating=6.8, wins=18, draws=6, losses=6,
+        trophies=[], individualAwards=[], keyEvents=[],
+    )
+    base.update(overrides)
+    return SeasonSnapshot(**base)
+
+
+def test_young_player_grows_and_veteran_declines():
+    """B10: close_season no tocaba ningún atributo, así que nunca evolucionaban."""
+    young = build_player_from_draft(make_draft(age=18, position="ST"))
+    young.potential = 90
+    before_young = young.technical.shooting
+
+    veteran = build_player_from_draft(make_draft(age=34, position="ST"))
+    veteran.potential = 90
+    before_veteran = veteran.physical.stamina
+
+    develop_player(young, 2200, 7.0, key_attributes_for("ST"), random.Random(1))
+    develop_player(veteran, 2200, 7.0, key_attributes_for("ST"), random.Random(1))
+
+    assert young.technical.shooting > before_young
+    assert veteran.physical.stamina < before_veteran
+
+
+def test_growth_stops_at_potential_ceiling():
+    player = build_player_from_draft(make_draft(age=18, position="ST"))
+    player.potential = 60
+    player.technical.shooting = 72
+
+    develop_player(player, 2200, 7.5, key_attributes_for("ST"), random.Random(3))
+
+    assert player.technical.shooting == 72
+
+
+def test_bench_player_barely_develops():
+    starter = build_player_from_draft(make_draft(age=18, position="ST"))
+    benched = build_player_from_draft(make_draft(age=18, position="ST"))
+    starter.potential = benched.potential = 95
+    baseline = starter.technical.shooting
+
+    develop_player(starter, 2400, 7.0, key_attributes_for("ST"), random.Random(5))
+    develop_player(benched, 150, 7.0, key_attributes_for("ST"), random.Random(5))
+
+    assert starter.technical.shooting - baseline > benched.technical.shooting - baseline
+
+
+def test_declining_a_retirement_offer_accelerates_the_decline():
+    steady = build_player_from_draft(make_draft(age=35, position="ST"))
+    stubborn = build_player_from_draft(make_draft(age=35, position="ST"))
+    stubborn.retirementOffersDeclined = 3
+    baseline = steady.physical.stamina
+
+    develop_player(steady, 1200, 6.2, key_attributes_for("ST"), random.Random(7))
+    develop_player(stubborn, 1200, 6.2, key_attributes_for("ST"), random.Random(7))
+
+    assert stubborn.physical.stamina < steady.physical.stamina < baseline
+
+
+def test_retirement_is_offered_only_when_the_career_is_ending():
+    prime = build_player_from_draft(make_draft(age=26))
+    veteran = build_player_from_draft(make_draft(age=35))
+    veteran.age = 37
+    fading = build_player_from_draft(make_draft(age=33))
+
+    assert not should_offer_retirement(prime, _snapshot())
+    assert should_offer_retirement(veteran, _snapshot())
+    assert should_offer_retirement(fading, _snapshot(minutesPlayed=400))
+    assert not should_offer_retirement(fading, _snapshot())
+
+
+def test_retired_player_is_never_offered_retirement_again():
+    player = build_player_from_draft(make_draft(age=35))
+    player.age = 37
+    player.retired = True
+
+    assert not should_offer_retirement(player, _snapshot())
+
+
+def test_reputation_converges_instead_of_pinning_at_the_extremes():
+    """B22: la reputación acumulativa acababa clavada en 0 o en 100."""
+    star = build_player_from_draft(make_draft(startingClub="esp-realmadrid", startingLeague="esp-laliga"))
+    star.state.reputation = 100
+    progress = SeasonProgress(matchesPlayed=30, appearances=30, goals=2, assists=1, ratingsSum=30 * 6.1)
+
+    close_season(star, progress, 1, rng=random.Random(2))
+    assert star.state.reputation < 100
+
+    forgotten = build_player_from_draft(make_draft(startingClub="col-envigado"))
+    forgotten.state.reputation = 0
+    good_progress = SeasonProgress(matchesPlayed=30, appearances=30, goals=15, assists=8, ratingsSum=30 * 7.1)
+
+    close_season(forgotten, good_progress, 1, rng=random.Random(2))
+    assert forgotten.state.reputation > 0
 
 
 def test_close_season_produces_snapshot_with_totals():

@@ -141,6 +141,7 @@ class Player(BaseModel):
     technical: TechnicalStats
     mental: MentalStats
     physical: PhysicalStats
+    potential: float = 78.0
     state: PlayerState
     finance: PlayerFinance
     relationships: PlayerRelationships
@@ -153,6 +154,8 @@ class Player(BaseModel):
     goals: int
     assists: int
     matchesPlayed: int
+    retired: bool = False
+    retirementOffersDeclined: int = 0
     createdAt: str
 
     model_config = ConfigDict(populate_by_name=True)
@@ -404,6 +407,21 @@ class AcceptTransferPayload(BaseModel):
     offerId: str | None = None
 
 
+class RetirementOffer(BaseModel):
+    """Decisión de fin de carrera. El motor la sugiere; el jugador decide."""
+
+    title: str
+    message: str
+    reasons: list[str] = Field(default_factory=list)
+    stayWarning: str
+    seasonsPlayed: int
+    age: int
+
+
+class ResolveRetirementPayload(BaseModel):
+    retire: bool
+
+
 class CareerSession(BaseModel):
     id: str
     player: Player
@@ -418,5 +436,6 @@ class CareerSession(BaseModel):
     pendingChains: list[PendingChain] = Field(default_factory=list)
     pendingRoulette: RouletteRoll | None = None
     pendingTransferWindow: TransferWindow | None = None
+    pendingRetirement: RetirementOffer | None = None
     currentClub: ClubInfo | None = None
     nextMatchSelection: MatchSelection | None = None

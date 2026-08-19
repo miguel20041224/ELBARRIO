@@ -33,6 +33,11 @@ def _base_stat(position: str, key: str, default: float) -> float:
     return POSITION_BASE_STATS.get(position, {}).get(key, default)
 
 
+def key_attributes_for(position: str) -> frozenset[str]:
+    """Atributos que definen la posición, y que por eso progresan más rápido."""
+    return frozenset(POSITION_BASE_STATS.get(position, {}))
+
+
 def build_player_from_draft(draft: CreationDraft, rng: random.Random | None = None) -> Player:
     r = rng or random.Random()
     league = get_league(draft.startingLeague)
@@ -66,6 +71,10 @@ def build_player_from_draft(draft: CreationDraft, rng: random.Random | None = No
         jumping=60,
         agility=65,
     )
+
+    # Techo de desarrollo. Es lo que separa una promesa de un crack, y no se le
+    # muestra al jugador: se descubre temporada a temporada.
+    potential = round(min(99.0, max(58.0, r.gauss(76, 9))), 1)
 
     club_salary_factor = club.prestige / 100 if club else 0.35
     league_salary = league.average_salary if league else 500
@@ -111,6 +120,7 @@ def build_player_from_draft(draft: CreationDraft, rng: random.Random | None = No
         technical=technical,
         mental=mental,
         physical=physical,
+        potential=potential,
         state=starting_state,
         finance=finance,
         relationships=relationships,

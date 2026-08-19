@@ -11,6 +11,8 @@ import TrophiesPanel from "./TrophiesPanel";
 import RouletteOverlay from "./RouletteOverlay";
 import SeasonProgressPanel from "./SeasonProgressPanel";
 import TransferWindowPanel from "./TransferWindowPanel";
+import RetirementPanel from "./RetirementPanel";
+import CareerEndPanel from "./CareerEndPanel";
 
 export default function CareerPage() {
   const session = useCareerStore((state) => state.session);
@@ -106,6 +108,13 @@ export default function CareerPage() {
       setSession(next);
     });
 
+  const resolveRetirement = (retire: boolean) =>
+    wrap(async () => {
+      if (!session) return;
+      const next = await careerApi.resolveRetirement(session.id, { retire });
+      setSession(next);
+    });
+
   if (!session) {
     return (
       <div className="panel p-8 text-center space-y-4">
@@ -177,7 +186,15 @@ export default function CareerPage() {
         </div>
 
         <div className="space-y-6">
-          {session.pendingRoulette ? (
+          {session.player.retired ? (
+            <CareerEndPanel session={session} />
+          ) : session.pendingRetirement ? (
+            <RetirementPanel
+              offer={session.pendingRetirement}
+              busy={actionsBusy}
+              onResolve={resolveRetirement}
+            />
+          ) : session.pendingRoulette ? (
             <RouletteOverlay
               roll={session.pendingRoulette}
               busy={actionsBusy}

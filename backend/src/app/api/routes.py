@@ -9,6 +9,7 @@ from app.schemas import (
     CareerSession,
     CreateCareerPayload,
     ResolveEventPayload,
+    ResolveRetirementPayload,
     SpinRoulettePayload,
     TeamOption,
 )
@@ -85,6 +86,20 @@ def advance_season(session_id: str, db: Session = Depends(get_db)):
     session = service.advance_season(session_id, db)
     if not session:
         raise HTTPException(status_code=404, detail="Career not found")
+    return session
+
+
+@router.post("/careers/{session_id}/resolve-retirement", response_model=CareerSession)
+def resolve_retirement(
+    session_id: str,
+    payload: ResolveRetirementPayload,
+    db: Session = Depends(get_db),
+):
+    session = service.resolve_retirement(session_id, payload.retire, db)
+    if not session:
+        raise HTTPException(
+            status_code=404, detail="Career or pending retirement not found"
+        )
     return session
 
 

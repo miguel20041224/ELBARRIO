@@ -137,7 +137,18 @@ export interface Player {
   goals: number;
   assists: number;
   matchesPlayed: number;
+  retired: boolean;
+  retirementOffersDeclined: number;
   createdAt: string;
+}
+
+export interface RetirementOffer {
+  title: string;
+  message: string;
+  reasons: string[];
+  stayWarning: string;
+  seasonsPlayed: number;
+  age: number;
 }
 
 export type EventCategory =
@@ -372,6 +383,7 @@ export interface CareerSession {
   pendingChains: PendingChain[];
   pendingRoulette: RouletteRoll | null;
   pendingTransferWindow: TransferWindow | null;
+  pendingRetirement: RetirementOffer | null;
   seasonProgress: SeasonProgress;
   seasonComplete: boolean;
   currentClub: ClubInfo | null;

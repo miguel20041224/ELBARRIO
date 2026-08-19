@@ -1,3 +1,4 @@
+import math
 import random
 from app.modules.clubs.data import Club, get_club, get_clubs_for_league
 from app.schemas import Fixture, MatchResult, MatchSelection, Player
@@ -30,10 +31,48 @@ ASSIST_RATE_BY_POSITION: dict[str, float] = {
 }
 
 
+# Goles por equipo y partido en una liga real rondan 1,35.
+BASE_TEAM_GOALS = 1.35
+
+# Atributos que definen el rendimiento de cada puesto, para ponderar el rating.
+KEY_ATTRIBUTES_BY_POSITION: dict[str, tuple[str, ...]] = {
+    "GK": ("concentration", "composure", "jumping"),
+    "CB": ("defending", "heading", "strength"),
+    "LB": ("defending", "pace", "stamina"),
+    "RB": ("defending", "pace", "stamina"),
+    "CDM": ("defending", "passing", "workRate"),
+    "CM": ("passing", "vision", "stamina"),
+    "CAM": ("passing", "vision", "dribbling"),
+    "LW": ("pace", "dribbling", "shooting"),
+    "RW": ("pace", "dribbling", "shooting"),
+    "ST": ("shooting", "heading", "pace"),
+}
+
+
 def _rookie_factor(player: Player) -> float:
     if player.state.reputation < 30:
         return player.state.reputation / 60
     return min(1.0, (player.state.reputation - 30) / 70 + 0.5)
+
+
+def _player_quality(player: Player) -> float:
+    """Calidad global del jugador, 0..1, pesando lo que define su posición."""
+    key = KEY_ATTRIBUTES_BY_POSITION.get(player.position, ())
+    groups = (player.technical, player.mental, player.physical)
+    values = [
+        value
+        for group in groups
+        for attribute, value in vars(group).items()
+    ]
+    overall = sum(values) / len(values)
+    key_values = [
+        getattr(group, attribute)
+        for group in groups
+        for attribute in key
+        if hasattr(group, attribute)
+    ]
+    specialised = sum(key_values) / len(key_values) if key_values else overall
+    return max(0.0, min(1.0, (overall * 0.45 + specialised * 0.55) / 100))
 
 
 def _pick_opponent(player_club: Club, rng: random.Random) -> Club:
@@ -123,6 +162,29 @@ def _minutes(player: Player, rng: random.Random) -> tuple[int, bool]:
     return 0, False
 
 
+MAX_GOALS_PER_SIDE = 7
+
+
+def _poisson(expected: float, rng: random.Random) -> int:
+    """Muestreo de Poisson por el método de Knuth.
+
+    Los goles son sucesos raros e independientes dentro del partido, que es
+    justo lo que modela una Poisson. El bucle anterior recorría `ceil(expected)`
+    iteraciones y, como `expected` nunca llegaba a 1, jamás podía devolver 2.
+    """
+    if expected <= 0:
+        return 0
+    limit = math.exp(-expected)
+    product = 1.0
+    count = 0
+    while count < MAX_GOALS_PER_SIDE:
+        product *= rng.random()
+        if product <= limit:
+            break
+        count += 1
+    return count
+
+
 def _compute_score(
     player_club: Club,
     opponent: Club,
@@ -130,27 +192,16 @@ def _compute_score(
     home_away: str,
     rng: random.Random,
 ) -> tuple[int, int, str]:
-    home_boost = 6 if home_away == "home" else (0 if home_away == "neutral" else -3)
-    diff = (player_club.prestige - opponent.prestige) + home_boost
-    diff += (player_rating - 6.5) * 6
-    diff += rng.uniform(-14, 14)
+    # Cada equipo marca según su propia Poisson: así los empates aparecen solos,
+    # en vez de depender de que dos randint independientes coincidan.
+    strength = (player_club.prestige - opponent.prestige) / 100
+    home_boost = 0.20 if home_away == "home" else (-0.12 if home_away == "away" else 0.0)
 
-    if diff > 12:
-        gf = rng.randint(2, 4)
-        ga = rng.randint(0, 1)
-    elif diff > 4:
-        gf = rng.randint(1, 3)
-        ga = rng.randint(0, 2)
-    elif diff > -4:
-        a = rng.randint(0, 3)
-        b = rng.randint(0, 3)
-        gf, ga = a, b
-    elif diff > -12:
-        gf = rng.randint(0, 2)
-        ga = rng.randint(1, 3)
-    else:
-        gf = rng.randint(0, 1)
-        ga = rng.randint(2, 4)
+    expected_for = BASE_TEAM_GOALS + strength * 0.85 + (player_rating - 6.5) * 0.08 + home_boost
+    expected_against = BASE_TEAM_GOALS - strength * 0.85 - home_boost * 0.6
+
+    gf = _poisson(max(0.15, expected_for), rng)
+    ga = _poisson(max(0.15, expected_against), rng)
 
     if gf > ga:
         result = "W"
@@ -262,25 +313,24 @@ def simulate_match(
     goal_rate = GOAL_RATE_BY_POSITION.get(player.position, 0.1)
     assist_rate = ASSIST_RATE_BY_POSITION.get(player.position, 0.1)
 
-    shot_quality = (player.technical.shooting / 100) * form * fitness
-    vision_quality = (player.technical.passing / 100) * (player.mental.vision / 100)
+    # Forma y estado físico modulan alrededor de 1, no multiplican hacia abajo:
+    # encadenar tres factores menores que 1 aplastaba la tasa a un tercio.
+    sharpness = (0.75 + 0.5 * form) * (0.8 + 0.4 * fitness)
+    shot_quality = 0.55 + (player.technical.shooting / 100) * 0.9
+    vision_quality = 0.55 + (player.technical.passing / 100) * 0.5 + (player.mental.vision / 100) * 0.4
 
-    expected_goals = goal_rate * minute_factor * (0.6 + shot_quality * 1.4)
-    expected_assists = assist_rate * minute_factor * (0.6 + vision_quality * 1.2)
+    expected_goals = goal_rate * minute_factor * shot_quality * sharpness
+    expected_assists = assist_rate * minute_factor * vision_quality * sharpness
 
-    goals = 0
-    while expected_goals > 0:
-        if r.random() < min(0.85, expected_goals):
-            goals += 1
-        expected_goals -= 1
-    assists = 0
-    while expected_assists > 0:
-        if r.random() < min(0.75, expected_assists):
-            assists += 1
-        expected_assists -= 1
+    goals = _poisson(expected_goals, r)
+    assists = _poisson(expected_assists, r)
 
-    base_rating = 6.2 + (form - 0.5) * 0.8 + (fitness - 0.6) * 0.5
-    base_rating += goals * 0.8 + assists * 0.5
+    # La calidad del jugador entra en el rating: sin este término un crack y un
+    # juvenil puntuaban igual, y toda la escala vivía en una banda de 0,3.
+    quality = _player_quality(player)
+    base_rating = 5.35 + quality * 1.45
+    base_rating += (form - 0.5) * 0.8 + (fitness - 0.6) * 0.5
+    base_rating += goals * 0.85 + assists * 0.5
     base_rating += r.gauss(0, 0.35)
     if not starter and minutes < 30 and goals + assists == 0:
         base_rating -= 0.2

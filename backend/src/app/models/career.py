@@ -21,6 +21,7 @@ class CareerSessionModel(Base):
     season_progress: Mapped[dict] = mapped_column(JSON, default=dict)
     pending_roulette: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     pending_transfer_window: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    pending_retirement: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )

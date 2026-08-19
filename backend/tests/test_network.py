@@ -17,6 +17,7 @@ from sqlalchemy.pool import StaticPool
 from app.config import DEFAULT_CORS_ORIGINS, Settings
 from app.database import Base, get_db
 from app.main import _log_startup_config, create_app
+from app.models import CareerSessionModel
 
 FRONTEND = "https://elbarrio.vercel.app"
 PREVIEW = "https://elbarrio-git-fix-cors-miguel.vercel.app"
@@ -58,7 +59,11 @@ def client() -> TestClient:
 
     app.dependency_overrides[get_db] = override_get_db
     # Sin `with`: no se ejecuta el lifespan, que crearía el fichero SQLite real.
-    return TestClient(app)
+    test_client = TestClient(app)
+    # Algunas pruebas necesitan sembrar estado que costaría veinte temporadas
+    # alcanzar jugando; se les da la misma base que usa la app.
+    test_client.session_factory = TestingSession
+    return test_client
 
 
 DRAFT = {
@@ -163,6 +168,50 @@ class TestActualRequests:
         response = client.post(f"/api/careers/{session_id}/play-match", headers={"Origin": FRONTEND})
         assert response.status_code == 409
         assert response.json()["reason"] == "pending_roulette"
+
+    def test_retirement_decision_ends_the_career_over_http(self, client):
+        """El retiro es una decisión del jugador: el motor la ofrece y, una vez
+        colgados los botines, la carrera queda cerrada."""
+        created = client.post("/api/careers", json=DRAFT, headers={"Origin": FRONTEND})
+        session_id = created.json()["id"]
+
+        # Se fuerza el estado de retiro pendiente sin jugar veinte temporadas.
+        offer = {
+            "title": "¿Colgás los botines?",
+            "message": "Las piernas ya no responden igual.",
+            "reasons": ["Tenés 37 años"],
+            "stayWarning": "Vas a caer más rápido.",
+            "seasonsPlayed": 18,
+            "age": 37,
+        }
+        db = client.session_factory()
+        try:
+            model = db.get(CareerSessionModel, session_id)
+            model.pending_roulette = None
+            model.pending_retirement = offer
+            db.commit()
+        finally:
+            db.close()
+
+        pending = client.get(f"/api/careers/{session_id}", headers={"Origin": FRONTEND})
+        assert pending.json()["pendingRetirement"]["age"] == 37
+
+        blocked = client.post(f"/api/careers/{session_id}/play-match", headers={"Origin": FRONTEND})
+        assert blocked.status_code == 409
+        assert blocked.json()["reason"] == "pending_retirement"
+
+        retired = client.post(
+            f"/api/careers/{session_id}/resolve-retirement",
+            json={"retire": True},
+            headers={"Origin": FRONTEND},
+        )
+        assert retired.status_code == 200
+        assert retired.json()["player"]["retired"] is True
+        assert retired.json()["pendingRetirement"] is None
+
+        after = client.post(f"/api/careers/{session_id}/play-match", headers={"Origin": FRONTEND})
+        assert after.status_code == 409
+        assert after.json()["reason"] == "retired"
 
     def test_response_to_unknown_origin_has_no_cors_header(self, client):
         """El servidor responde, pero el navegador descarta el cuerpo sin la cabecera."""

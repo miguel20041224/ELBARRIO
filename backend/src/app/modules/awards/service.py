@@ -2,10 +2,14 @@ from app.schemas import Player, SeasonSnapshot, TrophyRecord
 from app.modules.clubs.data import get_club, get_league
 
 
-PLAYER_OF_MATCH_THRESHOLD = 7.5
+# Calibrados contra la distribución real del motor: sobre 360 temporadas de un
+# delantero de élite la mediana es 6,95, el p90 7,21, el p99 7,44 y el techo
+# medido 7,61. Los umbrales anteriores (7,8 / 8,0 / 8,4) eran inalcanzables.
+PLAYER_OF_MATCH_THRESHOLD = 6.9
 GOLDEN_BOOT_MIN_GOALS = 18
-PLAYER_OF_SEASON_MIN_RATING = 7.8
-BALLON_DOR_MIN_RATING = 8.4
+XI_IDEAL_MIN_RATING = 7.15
+PLAYER_OF_SEASON_MIN_RATING = 7.25
+BALLON_DOR_MIN_RATING = 7.45
 BALLON_DOR_MIN_GOALS = 25
 
 
@@ -64,7 +68,7 @@ def compute_season_awards(
             )
         )
 
-    if snapshot.averageRating >= 8.0 and snapshot.matchesPlayed >= 25:
+    if snapshot.averageRating >= XI_IDEAL_MIN_RATING and snapshot.matchesPlayed >= 25:
         awards.append(
             TrophyRecord(
                 kind="individual",

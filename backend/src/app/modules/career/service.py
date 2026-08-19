@@ -24,6 +24,7 @@ from app.modules.roulette.service import (
     build_roulette,
     find_outcome,
 )
+from app.modules.simulation.development import build_retirement_offer, should_offer_retirement
 from app.modules.simulation.match import build_match_selection, simulate_match
 from app.modules.simulation.season import close_season, ensure_season_fixtures, refresh_league_table
 from app.modules.transfers.service import (
@@ -38,6 +39,7 @@ from app.schemas import (
     MatchResult,
     PendingChain,
     Player,
+    RetirementOffer,
     RouletteRoll,
     SeasonProgress,
     SeasonSnapshot,
@@ -101,10 +103,20 @@ def _to_response(model: CareerSessionModel) -> CareerSession:
         if model.pending_transfer_window
         else None
     )
+    retirement = (
+        RetirementOffer(**model.pending_retirement) if model.pending_retirement else None
+    )
     season_complete = progress.matchesPlayed >= progress.matchesTotal
     next_fixture = progress.fixtures[progress.matchesPlayed] if not season_complete and progress.fixtures else None
     next_selection = None
-    if next_fixture and not (model.pending_roulette or model.pending_transfer_window or model.pending_event_id):
+    blocked = (
+        model.pending_roulette
+        or model.pending_transfer_window
+        or model.pending_event_id
+        or model.pending_retirement
+        or player.retired
+    )
+    if next_fixture and not blocked:
         next_selection = build_match_selection(player, next_fixture)
     return CareerSession(
         id=model.id,
@@ -122,6 +134,7 @@ def _to_response(model: CareerSessionModel) -> CareerSession:
         pendingChains=chains,
         pendingRoulette=roulette,
         pendingTransferWindow=transfer,
+        pendingRetirement=retirement,
         currentClub=_club_info(player.clubId),
         nextMatchSelection=next_selection,
     )
@@ -135,6 +148,7 @@ def _persist(
     progress: SeasonProgress | None = None,
     roulette: RouletteRoll | None = ...,
     transfer: TransferWindow | None = ...,
+    retirement: RetirementOffer | None = ...,
 ) -> CareerSessionModel:
     model.player_data = player.model_dump()
     if chains is not None:
@@ -145,6 +159,8 @@ def _persist(
         model.pending_roulette = roulette.model_dump() if roulette else None
     if transfer is not ...:
         model.pending_transfer_window = transfer.model_dump() if transfer else None
+    if retirement is not ...:
+        model.pending_retirement = retirement.model_dump() if retirement else None
     db.add(model)
     try:
         db.commit()
@@ -245,6 +261,10 @@ def play_match(session_id: str, db: Session) -> CareerSession | None:
     model = db.get(CareerSessionModel, session_id)
     if not model:
         return None
+    if Player(**model.player_data).retired:
+        raise ActionBlockedError("retired")
+    if model.pending_retirement:
+        raise ActionBlockedError("pending_retirement")
     if model.pending_roulette:
         raise ActionBlockedError("pending_roulette")
     if model.pending_transfer_window:
@@ -379,6 +399,10 @@ def advance_season(session_id: str, db: Session) -> CareerSession | None:
     model = db.get(CareerSessionModel, session_id)
     if not model:
         return None
+    if Player(**model.player_data).retired:
+        raise ActionBlockedError("retired")
+    if model.pending_retirement:
+        raise ActionBlockedError("pending_retirement")
     if model.pending_roulette or model.pending_transfer_window:
         return _to_response(model)
 
@@ -408,9 +432,45 @@ def advance_season(session_id: str, db: Session) -> CareerSession | None:
     model.pending_event_reason = None
 
     new_progress = ensure_season_fixtures(player, SeasonProgress(), model.current_season)
-    end_roulette = build_roulette("season_end", player)
 
-    _persist(model, player, db, progress=new_progress, roulette=end_roulette)
+    # Cuando el motor detecta el final del camino, la decisión de retirarse
+    # reemplaza al ritual de fin de temporada: primero se resuelve, y solo si el
+    # jugador sigue se dispara la ruleta y la ventana de fichajes.
+    if should_offer_retirement(player, snapshot):
+        offer = build_retirement_offer(player, snapshot, seasons_played=len(history))
+        _persist(model, player, db, progress=new_progress, retirement=offer)
+        return _to_response(model)
+
+    _persist(
+        model,
+        player,
+        db,
+        progress=new_progress,
+        roulette=build_roulette("season_end", player),
+    )
+    return _to_response(model)
+
+
+def resolve_retirement(session_id: str, retire: bool, db: Session) -> CareerSession | None:
+    model = db.get(CareerSessionModel, session_id)
+    if not model or not model.pending_retirement:
+        return None
+
+    player = Player(**model.player_data)
+    if retire:
+        player.retired = True
+        _persist(model, player, db, retirement=None, roulette=None, transfer=None)
+        return _to_response(model)
+
+    # Sigue un año más: el desgaste extra se aplica en el desarrollo posterior.
+    player.retirementOffersDeclined += 1
+    _persist(
+        model,
+        player,
+        db,
+        retirement=None,
+        roulette=build_roulette("season_end", player),
+    )
     return _to_response(model)
 
 
