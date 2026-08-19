@@ -27,6 +27,8 @@ export default function CreationLayout() {
   const reset = useCreationStore((state) => state.reset);
   const setSession = useCareerStore((state) => state.setSession);
   const setLoading = useCareerStore((state) => state.setLoading);
+  const loading = useCareerStore((state) => state.loading);
+  const error = useCareerStore((state) => state.error);
   const setError = useCareerStore((state) => state.setError);
   const navigate = useNavigate();
 
@@ -99,6 +101,39 @@ export default function CreationLayout() {
         <StepComponent />
       </div>
 
+      {error && step === STEPS.length - 1 ? (
+        <div
+          role="alert"
+          className="panel border border-red-500/50 bg-red-950/40 p-4 space-y-3"
+        >
+          <div className="space-y-1">
+            <p className="font-semibold text-red-300">No se pudo iniciar la carrera</p>
+            <p className="text-sm text-red-200/90">{error}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={loading}
+              onClick={handleNext}
+            >
+              Reintentar
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={loading}
+              onClick={() => {
+                setError(null);
+                setStep(0);
+              }}
+            >
+              Volver a revisar los datos
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex justify-between">
         <button
           type="button"
@@ -111,10 +146,14 @@ export default function CreationLayout() {
         <button
           type="button"
           className="btn btn-primary"
-          disabled={!canAdvance}
+          disabled={!canAdvance || loading}
           onClick={handleNext}
         >
-          {step === STEPS.length - 1 ? "Iniciar carrera" : "Siguiente"}
+          {loading && step === STEPS.length - 1
+            ? "Iniciando…"
+            : step === STEPS.length - 1
+              ? "Iniciar carrera"
+              : "Siguiente"}
         </button>
       </div>
     </div>
