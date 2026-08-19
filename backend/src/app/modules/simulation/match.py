@@ -288,10 +288,7 @@ def simulate_match(
     gf, ga, result = _compute_score(club, opponent, rating, home_away, r)
     if goals > gf:
         gf = goals
-        if result == "L" and gf > ga:
-            result = "W"
-        elif result == "L" and gf == ga:
-            result = "D"
+        result = "W" if gf > ga else "D" if gf == ga else "L"
 
     fatigue_added = int(minutes * 0.35)
     player.state.fatigue = min(100, player.state.fatigue + fatigue_added)

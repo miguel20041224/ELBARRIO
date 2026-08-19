@@ -1,6 +1,7 @@
 import random
 from uuid import uuid4
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
 from app.models import CareerSessionModel
 from app.modules.awards.service import compute_season_awards, snapshot_award_names
@@ -46,6 +47,16 @@ from app.schemas import (
 
 
 RECENT_MATCH_LIMIT = 8
+
+
+class ActionBlockedError(Exception):
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(reason)
+
+
+class ConcurrentModificationError(Exception):
+    pass
 
 
 def _tick_contract_year(player: Player) -> None:
@@ -133,7 +144,13 @@ def _persist(
     if transfer is not ...:
         model.pending_transfer_window = transfer.model_dump() if transfer else None
     db.add(model)
-    db.commit()
+    try:
+        db.commit()
+    except StaleDataError:
+        db.rollback()
+        raise ConcurrentModificationError(
+            "La carrera fue modificada por otra petición mientras tanto."
+        ) from None
     db.refresh(model)
     return model
 
@@ -223,10 +240,12 @@ def play_match(session_id: str, db: Session) -> CareerSession | None:
     model = db.get(CareerSessionModel, session_id)
     if not model:
         return None
-    if model.pending_roulette or model.pending_transfer_window:
-        return _to_response(model)
+    if model.pending_roulette:
+        raise ActionBlockedError("pending_roulette")
+    if model.pending_transfer_window:
+        raise ActionBlockedError("pending_transfer_window")
     if model.pending_event_id:
-        return _to_response(model)
+        raise ActionBlockedError("pending_event")
 
     progress = ensure_season_fixtures(
         Player(**model.player_data),

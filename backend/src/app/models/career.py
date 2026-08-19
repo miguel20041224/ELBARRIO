@@ -9,6 +9,7 @@ class CareerSessionModel(Base):
     __tablename__ = "career_sessions"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     mode: Mapped[str] = mapped_column(String(16), nullable=False)
     current_season: Mapped[int] = mapped_column(Integer, default=1)
     pending_event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -28,3 +29,5 @@ class CareerSessionModel(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    __mapper_args__ = {"version_id_col": version}

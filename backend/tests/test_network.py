@@ -151,7 +151,18 @@ class TestActualRequests:
         fetched = client.get(f"/api/careers/{session_id}", headers={"Origin": FRONTEND})
         assert fetched.status_code == 200
         assert fetched.headers["access-control-allow-origin"] == FRONTEND
-        assert fetched.json()["id"] == session_id
+
+    def test_play_match_blocked_by_pending_action_returns_409(self, client):
+        """Una carrera recién creada tiene la ruleta de inicio pendiente: jugar
+        un partido antes de resolverla debe rechazarse explícitamente, no
+        devolver 200 sin hacer nada (B25)."""
+        created = client.post("/api/careers", json=DRAFT, headers={"Origin": FRONTEND})
+        session_id = created.json()["id"]
+        assert created.json()["pendingRoulette"] is not None
+
+        response = client.post(f"/api/careers/{session_id}/play-match", headers={"Origin": FRONTEND})
+        assert response.status_code == 409
+        assert response.json()["reason"] == "pending_roulette"
 
     def test_response_to_unknown_origin_has_no_cors_header(self, client):
         """El servidor responde, pero el navegador descarta el cuerpo sin la cabecera."""

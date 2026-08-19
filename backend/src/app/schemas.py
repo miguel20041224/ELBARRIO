@@ -335,6 +335,7 @@ class SeasonSnapshot(BaseModel):
     clubId: str | None
     clubName: str | None = None
     matchesPlayed: int
+    callUps: int = 0
     goals: int
     assists: int
     minutesPlayed: int = 0

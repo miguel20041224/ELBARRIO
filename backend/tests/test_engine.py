@@ -29,7 +29,7 @@ from app.modules.simulation.season import (
 )
 from app.database import Base
 from app.models import CareerSessionModel
-from app.modules.career.service import advance_season, play_match
+from app.modules.career.service import ActionBlockedError, ConcurrentModificationError, advance_season, play_match
 from app.modules.transfers.service import (
     apply_transfer,
     compute_transfer_window,
@@ -220,6 +220,87 @@ def test_career_play_match_consumes_next_persisted_fixture():
     finally:
         db.close()
 
+
+def test_play_match_raises_blocked_error_with_pending_event():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    db = SessionLocal()
+    try:
+        p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+        progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+        model = CareerSessionModel(
+            id="blocked-session",
+            mode="player",
+            current_season=1,
+            pending_event_id="some-event",
+            pending_event_reason=None,
+            events_resolved_total=0,
+            player_data=p.model_dump(),
+            history=[],
+            pending_chains=[],
+            season_progress=progress.model_dump(),
+            pending_roulette=None,
+            pending_transfer_window=None,
+        )
+        db.add(model)
+        db.commit()
+
+        try:
+            play_match("blocked-session", db)
+            assert False, "expected ActionBlockedError"
+        except ActionBlockedError as exc:
+            assert exc.reason == "pending_event"
+    finally:
+        db.close()
+
+
+def test_persist_raises_concurrent_modification_on_stale_version(tmp_path):
+    from app.modules.career.service import _persist
+
+    db_path = tmp_path / "concurrent.db"
+    engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    db_a = SessionLocal()
+    db_b = SessionLocal()
+    try:
+        p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+        progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+        model = CareerSessionModel(
+            id="concurrent-session",
+            mode="player",
+            current_season=1,
+            pending_event_id=None,
+            pending_event_reason=None,
+            events_resolved_total=0,
+            player_data=p.model_dump(),
+            history=[],
+            pending_chains=[],
+            season_progress=progress.model_dump(),
+            pending_roulette=None,
+            pending_transfer_window=None,
+        )
+        db_a.add(model)
+        db_a.commit()
+
+        model_a = db_a.get(CareerSessionModel, "concurrent-session")
+        model_b = db_b.get(CareerSessionModel, "concurrent-session")
+
+        p.matchesPlayed = 1
+        _persist(model_a, p, db_a)
+
+        p.matchesPlayed = 2
+        try:
+            _persist(model_b, p, db_b)
+            assert False, "expected ConcurrentModificationError"
+        except ConcurrentModificationError:
+            pass
+    finally:
+        db_a.close()
+        db_b.close()
+
+
 def test_advance_season_generates_fixtures_for_displayed_next_season():
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
@@ -285,6 +366,18 @@ def test_simulate_match_uses_fixture_metadata():
     assert match.opponentId == "col-nacional"
     assert match.homeAway == "neutral"
     assert match.isClasico is True
+
+
+def test_simulate_match_result_always_matches_scoreline():
+    p = build_player_from_draft(make_draft(position="ST"))
+    for seed in range(200):
+        match = simulate_match(p, seed, rng=random.Random(seed))
+        if match.goalsFor > match.goalsAgainst:
+            assert match.result == "W"
+        elif match.goalsFor == match.goalsAgainst:
+            assert match.result == "D"
+        else:
+            assert match.result == "L"
 
 
 
@@ -451,6 +544,25 @@ def test_close_season_produces_snapshot_with_totals():
     assert snap.goals == 15
     assert snap.wins == 18
     assert snap.averageRating > 6.5
+
+
+def test_close_season_snapshot_counts_appearances_not_call_ups():
+    p = build_player_from_draft(make_draft())
+    progress = SeasonProgress(
+        matchesPlayed=34,
+        matchesTotal=34,
+        appearances=30,
+        goals=15,
+        assists=8,
+        minutesPlayed=2500,
+        ratingsSum=30 * 7.2,
+        wins=18,
+        draws=8,
+        losses=8,
+    )
+    snap = close_season(p, progress, 1, rng=random.Random(2))
+    assert snap.matchesPlayed == 30
+    assert snap.callUps == 34
 
 
 def test_should_offer_event_respects_max():

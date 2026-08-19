@@ -381,6 +381,7 @@ export interface SeasonSnapshot {
   clubId: string | null;
   clubName?: string | null;
   matchesPlayed: number;
+  callUps: number;
   goals: number;
   assists: number;
   minutesPlayed: number;

@@ -1,12 +1,14 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.routes import router as career_router
 from app.config import DEFAULT_CORS_ORIGINS, Settings, settings
 from app.database import init_db
+from app.modules.career.service import ActionBlockedError, ConcurrentModificationError
 
 logger = logging.getLogger("elbarrio")
 
@@ -90,6 +92,17 @@ def create_app(config: Settings | None = None) -> FastAPI:
     )
 
     application.include_router(career_router)
+
+    @application.exception_handler(ActionBlockedError)
+    def handle_action_blocked(_: Request, exc: ActionBlockedError):
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "La carrera tiene una acción pendiente por resolver.", "reason": exc.reason},
+        )
+
+    @application.exception_handler(ConcurrentModificationError)
+    def handle_concurrent_modification(_: Request, exc: ConcurrentModificationError):
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     @application.get("/health")
     def health():
