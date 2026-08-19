@@ -230,6 +230,9 @@ def _record_match_progress(player: Player, progress: SeasonProgress, match: Matc
     if match.minutesPlayed > 0:
         progress.ratingsSum += match.rating
         progress.appearances += 1
+    # La valla invicta se acredita a quien la sostuvo, no a quien entró al final.
+    if match.minutesPlayed >= 45 and match.goalsAgainst == 0:
+        progress.cleanSheets += 1
     if match.result == "W":
         progress.wins += 1
     elif match.result == "D":

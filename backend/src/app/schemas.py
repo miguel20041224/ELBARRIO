@@ -287,6 +287,7 @@ class SeasonProgress(BaseModel):
     appearances: int = 0
     goals: int = 0
     assists: int = 0
+    cleanSheets: int = 0
     minutesPlayed: int = 0
     ratingsSum: float = 0.0
     wins: int = 0
@@ -344,6 +345,7 @@ class SeasonSnapshot(BaseModel):
     callUps: int = 0
     goals: int
     assists: int
+    cleanSheets: int = 0
     minutesPlayed: int = 0
     averageRating: float
     wins: int = 0

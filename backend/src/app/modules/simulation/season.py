@@ -463,6 +463,7 @@ def close_season(
         callUps=progress.matchesPlayed,
         goals=progress.goals,
         assists=progress.assists,
+        cleanSheets=progress.cleanSheets,
         minutesPlayed=progress.minutesPlayed,
         averageRating=average_rating,
         wins=progress.wins,

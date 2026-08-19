@@ -284,6 +284,7 @@ export interface SeasonProgress {
   appearances: number;
   goals: number;
   assists: number;
+  cleanSheets: number;
   minutesPlayed: number;
   ratingsSum: number;
   wins: number;
@@ -398,6 +399,7 @@ export interface SeasonSnapshot {
   callUps: number;
   goals: number;
   assists: number;
+  cleanSheets: number;
   minutesPlayed: number;
   averageRating: number;
   wins: number;

@@ -219,7 +219,10 @@ export default function CareerPage() {
               onAdvanceSeason={advanceSeason}
             />
           )}
-          <SeasonHistory history={session.history} />
+          <SeasonHistory
+            history={session.history}
+            position={session.player.position}
+          />
         </div>
       </div>
     </div>

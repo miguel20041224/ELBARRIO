@@ -1,10 +1,16 @@
-import type { SeasonSnapshot } from "@/types/game";
+import type { Position, SeasonSnapshot } from "@/types/game";
+
+const DEFENSIVE_POSITIONS: Position[] = ["GK", "CB", "LB", "RB", "CDM"];
 
 interface Props {
   history: SeasonSnapshot[];
+  position: Position;
 }
 
-export default function SeasonHistory({ history }: Props) {
+export default function SeasonHistory({ history, position }: Props) {
+  // A un defensor se lo lee por las vallas que sostuvo, no por los goles.
+  const defensive = DEFENSIVE_POSITIONS.includes(position);
+
   if (history.length === 0) {
     return (
       <div className="panel p-5">
@@ -35,9 +41,12 @@ export default function SeasonHistory({ history }: Props) {
                 )}
               </div>
               <span className="text-xs text-barrio-muted">
-                {snapshot.matchesPlayed} PJ · {snapshot.goals}G ·{" "}
-                {snapshot.assists}A · {snapshot.averageRating.toFixed(2)} ·{" "}
-                {snapshot.wins}-{snapshot.draws}-{snapshot.losses}
+                {snapshot.matchesPlayed} PJ ·{" "}
+                {defensive
+                  ? `${snapshot.cleanSheets} VI`
+                  : `${snapshot.goals}G · ${snapshot.assists}A`}{" "}
+                · {snapshot.averageRating.toFixed(2)} · {snapshot.wins}-
+                {snapshot.draws}-{snapshot.losses}
               </span>
             </div>
             {snapshot.trophies.length > 0 && (

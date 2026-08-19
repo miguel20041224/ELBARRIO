@@ -941,6 +941,102 @@ def test_awards_ballon_dor_requires_trophy_and_rating():
     assert "Balón de Oro" in names
 
 
+def test_centre_back_wins_ballon_dor_on_clean_sheets_and_a_title():
+    """Un central se mide por vallas invictas y títulos, no por goles: es el
+    camino de Cannavaro en 2006 o Van Dijk en 2019."""
+    p = build_player_from_draft(make_draft(position="CB"))
+    snap = SeasonSnapshot(
+        season=1, clubId=p.clubId, clubName="Test FC",
+        matchesPlayed=34, goals=1, assists=1, cleanSheets=14, minutesPlayed=3000,
+        averageRating=6.5, wins=24, draws=6, losses=4,
+        trophies=["Champions League"], individualAwards=[], keyEvents=[],
+    )
+
+    names = [a.name for a in compute_season_awards(p, snap)]
+
+    assert "Balón de Oro" in names
+    assert any("Mejor Defensor" in n for n in names)
+
+
+def test_defender_without_a_title_does_not_win_ballon_dor():
+    """Sin levantar nada, por buena que sea la temporada, no alcanza."""
+    p = build_player_from_draft(make_draft(position="CB"))
+    snap = SeasonSnapshot(
+        season=1, clubId=p.clubId, clubName="Test FC",
+        matchesPlayed=34, goals=1, assists=1, cleanSheets=14, minutesPlayed=3000,
+        averageRating=6.5, wins=24, draws=6, losses=4,
+        trophies=[], individualAwards=[], keyEvents=[],
+    )
+
+    assert "Balón de Oro" not in [a.name for a in compute_season_awards(p, snap)]
+
+
+def test_defender_with_few_clean_sheets_does_not_win_ballon_dor():
+    p = build_player_from_draft(make_draft(position="CB"))
+    snap = SeasonSnapshot(
+        season=1, clubId=p.clubId, clubName="Test FC",
+        matchesPlayed=34, goals=1, assists=1, cleanSheets=3, minutesPlayed=3000,
+        averageRating=6.5, wins=24, draws=6, losses=4,
+        trophies=["Champions League"], individualAwards=[], keyEvents=[],
+    )
+
+    assert "Balón de Oro" not in [a.name for a in compute_season_awards(p, snap)]
+
+
+def test_goalkeeper_wins_golden_glove_on_clean_sheets():
+    p = build_player_from_draft(make_draft(position="GK"))
+    snap = SeasonSnapshot(
+        season=1, clubId=p.clubId, clubName="Test FC",
+        matchesPlayed=34, goals=0, assists=0, cleanSheets=13, minutesPlayed=3060,
+        averageRating=6.3, wins=22, draws=8, losses=4,
+        trophies=[], individualAwards=[], keyEvents=[],
+    )
+
+    assert any("Guante de Oro" in a.name for a in compute_season_awards(p, snap))
+
+
+def test_striker_does_not_win_defensive_awards():
+    """Los premios defensivos son de defensores, aunque el equipo no reciba goles."""
+    p = build_player_from_draft(make_draft(position="ST"))
+    snap = SeasonSnapshot(
+        season=1, clubId=p.clubId, clubName="Test FC",
+        matchesPlayed=34, goals=20, assists=8, cleanSheets=16, minutesPlayed=3000,
+        averageRating=7.1, wins=24, draws=6, losses=4,
+        trophies=["LaLiga"], individualAwards=[], keyEvents=[],
+    )
+
+    names = [a.name for a in compute_season_awards(p, snap)]
+
+    assert not any("Mejor Defensor" in n for n in names)
+    assert not any("Guante de Oro" in n for n in names)
+
+
+def test_clean_sheet_lifts_a_defender_rating_but_barely_moves_a_striker():
+    """B: una valla invicta no le sumaba nada a un central."""
+    from app.modules.simulation.match import _defensive_contribution
+
+    assert _defensive_contribution("CB", 0, 1.0) > 0.5
+    assert _defensive_contribution("GK", 0, 1.0) > 0.5
+    assert _defensive_contribution("ST", 0, 1.0) < 0.1
+    # Encajar goles castiga al defensor y deja casi indiferente al delantero.
+    assert _defensive_contribution("CB", 4, 1.0) < -0.5
+    # Quien entró al final no sostuvo esa valla.
+    assert _defensive_contribution("CB", 0, 0.1) < _defensive_contribution("CB", 0, 1.0)
+
+
+def test_man_of_the_match_is_reachable_for_defenders():
+    """Con el umbral único de 8,5 un defensor jamás podía ser figura."""
+    from app.modules.simulation.match import _is_man_of_the_match
+
+    assert _is_man_of_the_match("CB", 7.3, 0, 0, 0)
+    assert _is_man_of_the_match("GK", 7.2, 0, 0, 0)
+    # Encajando goles no hay figura defensiva, por buena que sea la nota.
+    assert not _is_man_of_the_match("CB", 7.5, 0, 0, 2)
+    # El delantero sigue necesitando marcar y una nota alta.
+    assert _is_man_of_the_match("ST", 8.3, 2, 0, 1)
+    assert not _is_man_of_the_match("ST", 8.3, 0, 0, 0)
+
+
 def test_roulette_builds_and_applies_outcome():
     p = build_player_from_draft(make_draft())
     rng = random.Random(9)

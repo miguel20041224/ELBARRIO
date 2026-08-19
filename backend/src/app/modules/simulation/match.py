@@ -34,6 +34,23 @@ ASSIST_RATE_BY_POSITION: dict[str, float] = {
 # Goles por equipo y partido en una liga real rondan 1,35.
 BASE_TEAM_GOALS = 1.35
 
+# Cuánto responde cada puesto por los goles que recibe el equipo.
+DEFENSIVE_WEIGHT_BY_POSITION: dict[str, float] = {
+    "GK": 1.0,
+    "CB": 0.9,
+    "LB": 0.7,
+    "RB": 0.7,
+    "CDM": 0.5,
+    "CM": 0.25,
+    "CAM": 0.1,
+    "LW": 0.05,
+    "RW": 0.05,
+    "ST": 0.05,
+}
+
+# Puestos a los que se les reconoce la figura del partido por sostener la valla.
+DEFENSIVE_MOM_POSITIONS = frozenset({"GK", "CB", "LB", "RB", "CDM"})
+
 # Atributos que definen el rendimiento de cada puesto, para ponderar el rating.
 KEY_ATTRIBUTES_BY_POSITION: dict[str, tuple[str, ...]] = {
     "GK": ("concentration", "composure", "jumping"),
@@ -53,6 +70,45 @@ def _rookie_factor(player: Player) -> float:
     if player.state.reputation < 30:
         return player.state.reputation / 60
     return min(1.0, (player.state.reputation - 30) / 70 + 0.5)
+
+
+def _defensive_contribution(position: str, goals_against: int, minute_factor: float) -> float:
+    """Cuánto pesa en la nota lo que pasó en la portería propia.
+
+    Un delantero se mide por lo que mete; un central y un arquero, por lo que
+    evitan. Se escala por minutos: quien entró a los 80' no sostuvo esa valla.
+    """
+    weight = DEFENSIVE_WEIGHT_BY_POSITION.get(position, 0.15)
+    if weight <= 0:
+        return 0.0
+
+    if goals_against == 0:
+        impact = 0.75
+    elif goals_against == 1:
+        impact = 0.15
+    elif goals_against == 2:
+        impact = -0.15
+    else:
+        impact = -0.3 * (goals_against - 1)
+
+    return impact * weight * min(1.0, minute_factor)
+
+
+def _is_man_of_the_match(
+    position: str,
+    rating: float,
+    goals: int,
+    assists: int,
+    goals_against: int,
+) -> bool:
+    """Figura del partido, medida en la escala del puesto.
+
+    El umbral único de 8,5 era inalcanzable para un defensor, así que la
+    distinción sencillamente no existía fuera del ataque.
+    """
+    if position in DEFENSIVE_MOM_POSITIONS:
+        return rating >= 7.1 and goals_against == 0
+    return rating >= 8.2 and (goals + assists) >= 1
 
 
 def _player_quality(player: Player) -> float:
@@ -334,12 +390,16 @@ def simulate_match(
     base_rating += r.gauss(0, 0.35)
     if not starter and minutes < 30 and goals + assists == 0:
         base_rating -= 0.2
-    rating = round(max(3.5, min(9.8, base_rating)), 2)
 
-    gf, ga, result = _compute_score(club, opponent, rating, home_away, r)
+    gf, ga, result = _compute_score(club, opponent, base_rating, home_away, r)
     if goals > gf:
         gf = goals
         result = "W" if gf > ga else "D" if gf == ga else "L"
+
+    # Lo que hace el equipo en defensa es el rendimiento del defensor: sin esto
+    # una valla invicta no le sumaba absolutamente nada a un central.
+    base_rating += _defensive_contribution(player.position, ga, minute_factor)
+    rating = round(max(3.5, min(9.8, base_rating)), 2)
 
     fatigue_added = int(minutes * 0.35)
     player.state.fatigue = min(100, player.state.fatigue + fatigue_added)
@@ -357,7 +417,7 @@ def simulate_match(
     player.goals += goals
     player.assists += assists
 
-    mom = rating >= 8.5 and (goals + assists) >= 1
+    mom = _is_man_of_the_match(player.position, rating, goals, assists, ga)
 
     narrative = _generate_narrative(
         player, result, gf, ga, opponent, home_away, minutes, goals, assists, starter
