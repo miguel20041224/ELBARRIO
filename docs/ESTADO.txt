@@ -1,0 +1,215 @@
+ELBARRIO — ESTADO DEL TRABAJO
+Actualizado: 2026-08-19
+Rama: main · Último commit: cba457f · Árbol limpio y sincronizado con origin/main
+
+
+================================================================================
+1. DÓNDE ESTAMOS
+================================================================================
+
+Se completó el plan de estabilización definido en:
+
+    research/elbarrio-validation/FASE0.md   (sección 15: orden de reparación)
+
+Los cuatro bloques (A, B, C, D) están cerrados, commiteados y pusheados.
+Eso desbloquea las mejoras P1-P10 de research/copero/INFORME.md, que era el
+trabajo que el propio informe marcaba como imposible de empezar antes: asumían
+un motor con progresión de atributos, competiciones completas y estadísticas
+coherentes, tres cosas que hasta ahora no existían.
+
+Estado de verificación al cerrar:
+
+    backend    105/105 tests pasando   (cd backend && poetry run pytest -q)
+    frontend   tsc --noEmit limpio
+    frontend   build OK
+
+
+================================================================================
+2. QUÉ SE HIZO, POR COMMIT
+================================================================================
+
+1b2c630  Bloque A — Desbloquear producción
+         CORS como cadena, VITE_API_URL, errores de red visibles, el frontend
+         lee del servidor al montar. (Ya estaba hecho antes de esta sesión.)
+
+8fd8a3b  Alembic + manejo de error al iniciar carrera
+         Migración baseline de career_sessions. Botones "Reintentar" y "Volver
+         a revisar los datos" cuando falla la creación.
+
+54766b7  Bloque B — Integridad de datos
+         · matchesPlayed del snapshot contaba convocatorias, no apariciones.
+           Corregido; se agregó callUps aparte para no perder ese dato.
+         · Un gol que desempataba dejaba el resultado etiquetado como empate.
+         · Columna version + bloqueo optimista de SQLAlchemy: las escrituras
+           concurrentes ahora chocan con 409 en vez de perderse en silencio.
+         · play-match devolvía 200 sin hacer nada si había algo pendiente;
+           ahora devuelve 409 con el motivo.
+
+11a7549  Bloque C — Competiciones
+         · Se persiste el historial completo de la temporada (matchHistory).
+           recentMatches queda solo como ventana de presentación y NO se envía
+           al cliente, para no inflar el payload.
+         · Los trofeos de eliminatoria se deciden por stageId == "final".
+           Antes "final" in "semifinal" era True: ganar la semi daba la copa.
+         · La copa nacional ahora elimina por ronda según prestigio.
+           Antes generaba siempre las 4 rondas: nunca te eliminaban.
+         · La competición continental tiene octavos, cuartos, semi y final.
+           Antes eran 6 partidos de fase de liga y nada más: en 360 temporadas
+           medidas nunca hubo una final continental.
+         · La tabla de liga proyectada varía por club Y por temporada.
+           Antes dependía solo del prestigio y clonaba registros idénticos.
+
+edc19f1  Bloque D — Balance del motor
+         · Goles y marcadores por muestreo de Poisson.
+         · Progresión y declive de atributos por edad, con techo de potencial.
+         · Retiro: el motor lo sugiere, el jugador decide.
+         · Reputación convergente en vez de acumulativa.
+         · Recalibración de umbrales de premios.
+         OJO: la calibración de este commit resultó estar mal. Ver punto 4.
+
+cba457f  Rendimiento defensivo y premios para defensores
+         · Las vallas invictas puntúan en el rating, según cuánto responde
+           cada puesto por ellas.
+         · Tres escalas de rating (ataque / defensa / arquero).
+         · Premios nuevos: Guante de Oro, Mejor Defensor.
+         · Balón de Oro alcanzable por defensores vía vallas + títulos.
+         · Figura del partido en la escala del puesto.
+
+
+================================================================================
+3. NÚMEROS MEDIDOS (antes -> después)
+================================================================================
+
+Motor de partido:
+
+    Dobletes                  imposibles  ->  6,6 %
+    Hat-tricks                imposibles  ->  1,3 %
+    Empates                       6,5 %   ->  24,8 %
+    Goles por partido             3,32    ->  2,71
+    Marcadores más frecuentes  2-0/3-0/4-0 -> 1-1/1-0/2-1
+    Trofeos por temporada         1,23    ->  0,27-0,40
+
+Progresión (delantero, 15 temporadas):
+
+    Shooting                    72 -> 72  ->  72 -> 86,5 -> declive
+
+Retiro (rechazando la oferta 3 veces, shooting por edad):
+
+    34 años  83,1
+    35 años  79,4
+    36 años  74,0
+    37 años  65,5
+
+    La caída se acelera con cada rechazo: la advertencia que ve el jugador
+    ("vas a caer más rápido") es literalmente cierta.
+
+Premios sobre 330 temporadas por puesto, en un club grande:
+
+                              ST     CB     GK
+    Balón de Oro               4      6      2
+    Jugador de la Temporada   17     24     13
+    XI Ideal                  44     62     32
+    Jugador del Partido       30     44     22
+    Específico del puesto     17     30     11
+                            (Bota) (Mejor  (Guante
+                                   Defensor) de Oro)
+
+    Un central gana el Balón de Oro en ~1,8 % de sus temporadas, sin marcar
+    goles: por vallas invictas y títulos. Es el camino de Cannavaro 2006 y
+    Van Dijk 2019.
+
+
+================================================================================
+4. LECCIÓN IMPORTANTE — CÓMO CALIBRAR
+================================================================================
+
+La calibración de umbrales del commit edc19f1 ESTABA MAL y se corrigió en
+cba457f. Vale la pena entender por qué, porque es un error fácil de repetir.
+
+Se midió con un arnés que inflaba reputación y minutos a mano. Ese arnés daba
+un techo de rating de 7,61 para un delantero de élite. Pero en carreras reales,
+pasadas por el service completo, el techo es 7,16. Resultado: los umbrales que
+se "corrigieron" en edc19f1 seguían siendo inalcanzables en juego real.
+
+REGLA: calibrar SIEMPRE contra carreras corridas por el service completo
+(create_career / play_match / advance_season / resolve_event / spin_roulette),
+nunca contra un loop hecho a mano que setea el estado del jugador de prepo.
+
+Distribuciones reales medidas (~430 temporadas, club grande, >=15 PJ):
+
+    escala      mediana   p85    p95    techo
+    ataque       6,71     6,93   7,05   7,16
+    defensa      6,25     6,37   6,45   6,63
+    arquero      6,11     6,23   6,31   6,39
+
+    Vallas invictas (CB/GK):  mediana 6 · p85 9 · p95 11 · techo 15
+    G+A (ST):                 mediana 16 · p85 24 · p95 28 · techo 35
+    Temporadas con título en un club grande: ~30 %
+
+Segunda regla que salió de acá: si un premio "no se gana nunca", antes de tocar
+el umbral hay que preguntarse si el motor mide lo que el premio pide. Dos veces
+en esta sesión la causa no era el umbral sino que el dato no existía:
+
+    · El rating no miraba los atributos del jugador. Un pibe de 55 y un crack
+      de 86 arrancaban ambos en 6,2.
+    · Una valla invicta no le sumaba nada al rating de un central.
+
+
+================================================================================
+5. QUÉ SIGUE
+================================================================================
+
+Siguiente trabajo: P1-P10 de research/copero/INFORME.md.
+
+    research/copero/ es el corpus crawleado de potrerofutbol.ar/el-idolo, la
+    referencia de diseño. INFORME.md tiene las diez mejoras propuestas.
+
+Antes de arrancar conviene leer, en este orden:
+
+    1. research/copero/INFORME.md          (las mejoras P1-P10)
+    2. research/elbarrio-validation/FASE0.md, sección 15
+       (para confirmar que no quedó nada pendiente de A-D)
+
+Pendiente conocido, preexistente, NO bloqueante:
+
+    · Los premios no distinguen entre ligas. Un "Mejor Defensor" en Primera A
+      de Colombia pesa lo mismo que en LaLiga.
+    · Las herramientas de auditoría de research/elbarrio-validation/
+      (runner.py, analyze.py, robustness.py) no se corrieron después de los
+      Bloques C y D. FASE0.md sección 12 recomienda pasarlas sobre 24 carreras
+      después de cada bloque para verificar que los 20 invariantes no
+      retrocedieron. Son caras (minutos), no van a CI. Vale la pena correrlas
+      una vez antes de empezar P1-P10.
+
+
+================================================================================
+6. CÓMO LEVANTAR EL ENTORNO
+================================================================================
+
+Backend:
+
+    cd backend
+    poetry install
+    poetry run alembic upgrade head
+    poetry run uvicorn app.main:app --reload --app-dir src
+    poetry run pytest -q
+
+Frontend:
+
+    cd frontend
+    npm install
+    npm run dev
+
+    El build de producción EXIGE VITE_API_URL definida; es a propósito, para
+    que un deploy mal configurado falle al construir y no en el navegador del
+    usuario. Para un build local:
+
+        VITE_API_URL="http://localhost:8000/api" npm run build
+
+Base de datos local:
+
+    backend/elbarrio.db está en .gitignore y es descartable. Si Alembic se
+    queja de que la tabla ya existe, es porque init_db()/create_all la creó
+    antes; borrar el archivo y correr "alembic upgrade head" de cero.
+
+Deploy: ver docs/DEPLOY.md
