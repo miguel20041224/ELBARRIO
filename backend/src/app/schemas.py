@@ -239,6 +239,7 @@ class MatchResult(BaseModel):
     week: int = 0
     competitionId: str = "friendly"
     competitionName: str = "Amistoso"
+    stageId: str = ""
     stageDisplay: str = ""
     opponentId: str
     opponentName: str
@@ -275,6 +276,7 @@ class LeagueTableEntry(BaseModel):
 
 
 class SeasonProgress(BaseModel):
+    season: int = 0
     matchesPlayed: int = 0
     matchesTotal: int = 34
     eventsUsed: int = 0
@@ -291,6 +293,7 @@ class SeasonProgress(BaseModel):
     leagueDraws: int = 0
     leagueLosses: int = 0
     recentMatches: list[MatchResult] = Field(default_factory=list)
+    matchHistory: list[MatchResult] = Field(default_factory=list)
     fixtures: list[Fixture] = Field(default_factory=list)
     competitionProgress: list[CompetitionProgress] = Field(default_factory=list)
     leagueTable: list[LeagueTableEntry] = Field(default_factory=list)

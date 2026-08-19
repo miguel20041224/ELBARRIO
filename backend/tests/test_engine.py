@@ -35,7 +35,15 @@ from app.modules.transfers.service import (
     compute_transfer_window,
     stay_at_club,
 )
-from app.schemas import CreationDraft, Fixture, LeagueTableEntry, PendingChain, SeasonProgress, SeasonSnapshot
+from app.schemas import (
+    CreationDraft,
+    Fixture,
+    LeagueTableEntry,
+    MatchResult,
+    PendingChain,
+    SeasonProgress,
+    SeasonSnapshot,
+)
 
 
 def make_draft(**overrides) -> CreationDraft:
@@ -149,10 +157,41 @@ def test_colombia_plan_has_short_regular_phase_playoffs_and_cup():
         if f.competitionId == "col-primera-a" and f.stageId == "regular"
     ]
 
+    playoffs = [f for f in fixtures if "playoff" in f.stageId]
+    cup = [f for f in fixtures if f.competitionId.startswith("domestic-cup-")]
+
     assert len(league_regular) == 20
-    assert any(f.competitionId.startswith("domestic-cup-") for f in fixtures)
-    assert any("playoff" in f.stageId for f in fixtures)
-    assert len(fixtures) >= 26
+    assert len(playoffs) == 4
+    assert cup
+    assert len(fixtures) == len(league_regular) + len(playoffs) + len(cup)
+
+
+def test_domestic_cup_can_eliminate_before_the_final():
+    """B21: la copa generaba siempre las 4 rondas, así que nunca te eliminaban."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    rounds_seen = set()
+    for season in range(60):
+        fixtures = build_season_fixtures(p, season, rng=random.Random(season))
+        cup = [f for f in fixtures if f.competitionId.startswith("domestic-cup-")]
+        rounds_seen.add(len(cup))
+
+    assert len(rounds_seen) > 1
+    assert min(rounds_seen) < 4
+
+
+def test_continental_cup_has_knockout_stages_and_a_final():
+    """B5: la Champions solo generaba fase de liga, jamás una final."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    reached_final = False
+    for season in range(60):
+        fixtures = build_season_fixtures(p, season, rng=random.Random(season))
+        continental = [f for f in fixtures if f.competitionId == "uefa-champions"]
+        assert continental
+        if any(f.stageId == "final" for f in continental):
+            reached_final = True
+            assert any(f.stageId == "semifinal" for f in continental)
+
+    assert reached_final
 
 
 def test_ensure_season_fixtures_backfills_legacy_progress_and_total():
@@ -217,6 +256,42 @@ def test_career_play_match_consumes_next_persisted_fixture():
         assert match.competitionId == first_fixture.competitionId
         assert match.opponentId == first_fixture.opponentId
         assert match.homeAway == first_fixture.homeAway
+    finally:
+        db.close()
+
+
+def test_match_history_is_persisted_but_not_sent_to_the_client():
+    """B4/B5: el historial completo vive en la sesión; el cliente solo ve la ventana."""
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    db = SessionLocal()
+    try:
+        p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+        progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+        model = CareerSessionModel(
+            id="history-session",
+            mode="player",
+            current_season=1,
+            pending_event_id=None,
+            pending_event_reason=None,
+            events_resolved_total=0,
+            player_data=p.model_dump(),
+            history=[],
+            pending_chains=[],
+            season_progress=progress.model_dump(),
+            pending_roulette=None,
+            pending_transfer_window=None,
+        )
+        db.add(model)
+        db.commit()
+
+        session = None
+        for _ in range(3):
+            session = play_match("history-session", db)
+
+        assert session.seasonProgress.matchHistory == []
+        assert len(model.season_progress["matchHistory"]) == 3
     finally:
         db.close()
 
@@ -456,6 +531,66 @@ def test_league_table_ranks_player_club_by_points():
     )
 
 
+def test_projected_league_table_varies_between_seasons():
+    """El rendimiento proyectado de cada rival depende del club Y de la temporada,
+    para que no rindan siempre igual respecto a su prestigio."""
+    p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+
+    def rival_records(season: int):
+        progress = ensure_season_fixtures(
+            p,
+            SeasonProgress(
+                matchesPlayed=10,
+                leagueWins=6,
+                leagueDraws=2,
+                leagueLosses=2,
+            ),
+            season,
+        )
+        table = build_league_table(p, progress)
+        return {
+            row.clubId: (row.wins, row.draws, row.losses, row.goalsFor)
+            for row in table
+            if row.clubId != p.clubId
+        }
+
+    first = rival_records(1)
+    second = rival_records(2)
+
+    assert first.keys() == second.keys()
+    assert first != second
+    # Y dentro de una misma temporada el resultado es estable.
+    assert rival_records(1) == first
+
+
+def test_league_table_rows_are_arithmetically_coherent_and_not_uniform():
+    """B11: la proyección solo dependía del prestigio y clonaba registros."""
+    p = build_player_from_draft(make_draft(startingClub="col-envigado"))
+    progress = SeasonProgress(
+        matchesPlayed=5,
+        wins=3,
+        draws=1,
+        losses=1,
+        leagueWins=3,
+        leagueDraws=1,
+        leagueLosses=1,
+        fixtures=build_season_fixtures(p),
+    )
+
+    table = build_league_table(p, progress)
+    rival_records = {
+        (row.wins, row.draws, row.losses, row.goalsFor, row.goalsAgainst)
+        for row in table
+        if row.clubId != p.clubId
+    }
+
+    assert len(rival_records) > 1
+    for row in table:
+        assert row.wins + row.draws + row.losses == row.played
+        assert row.points == row.wins * 3 + row.draws
+        assert row.goalDifference == row.goalsFor - row.goalsAgainst
+
+
 def test_league_table_uses_league_record_not_total_cup_wins():
     p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
     progress = SeasonProgress(
@@ -474,6 +609,111 @@ def test_league_table_uses_league_record_not_total_cup_wins():
 
     assert player_row.points == 10
     assert player_row.wins == 3
+
+
+def _cup_match(*, stage_id, stage_display, result, competition_name="Copa del Rey") -> MatchResult:
+    return MatchResult(
+        matchNumber=1,
+        competitionId="domestic-cup-ES",
+        competitionName=competition_name,
+        stageId=stage_id,
+        stageDisplay=stage_display,
+        opponentId="rival",
+        opponentName="Rival FC",
+        opponentShortName="RIV",
+        goalsFor=1,
+        goalsAgainst=0,
+        result=result,
+        minutesPlayed=90,
+        goals=0,
+        assists=0,
+        rating=7.0,
+        starter=True,
+        narrative="",
+    )
+
+
+def test_league_table_uses_full_season_history_beyond_recent_window():
+    """B4: la ventana recentMatches (8) no debe limitar el cómputo de goles de la tabla."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    league_matches = [
+        MatchResult(
+            matchNumber=i,
+            competitionId="esp-laliga",
+            competitionName="LaLiga",
+            opponentId="rival",
+            opponentName="Rival FC",
+            opponentShortName="RIV",
+            goalsFor=2,
+            goalsAgainst=0,
+            result="W",
+            minutesPlayed=90,
+            goals=1,
+            assists=0,
+            rating=7.5,
+            starter=True,
+            narrative="",
+        )
+        for i in range(1, 11)
+    ]
+    progress = SeasonProgress(
+        matchesPlayed=10,
+        wins=10,
+        draws=0,
+        losses=0,
+        leagueWins=10,
+        leagueDraws=0,
+        leagueLosses=0,
+        recentMatches=league_matches[-8:],
+        matchHistory=league_matches,
+        fixtures=build_season_fixtures(p),
+    )
+
+    table = build_league_table(p, progress)
+    player_row = next(row for row in table if row.clubId == p.clubId)
+
+    assert player_row.goalsFor == 20
+    assert player_row.goalsAgainst == 0
+
+
+def test_knockout_trophy_survives_beyond_recent_matches_window():
+    """B5: una final ganada antes de los últimos 8 partidos no debe perder el trofeo."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    final_win = _cup_match(stage_id="final", stage_display="Final", result="W")
+    filler = [
+        _cup_match(stage_id="regular", stage_display="League", result="D", competition_name="LaLiga")
+        for _ in range(9)
+    ]
+    progress = SeasonProgress(
+        matchesPlayed=10,
+        wins=1,
+        draws=9,
+        losses=0,
+        recentMatches=filler[-8:],
+        matchHistory=[final_win, *filler],
+        fixtures=build_season_fixtures(p),
+    )
+
+    snap = close_season(p, progress, 1, rng=random.Random(1))
+    assert "Copa del Rey" in snap.trophies
+
+
+def test_semifinal_win_does_not_award_trophy():
+    """B26: 'final' in 'semifinal' era True; ganar la semifinal no debe dar título."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    semifinal_win = _cup_match(stage_id="semifinal", stage_display="Semifinal", result="W")
+    progress = SeasonProgress(
+        matchesPlayed=1,
+        wins=1,
+        draws=0,
+        losses=0,
+        recentMatches=[semifinal_win],
+        matchHistory=[semifinal_win],
+        fixtures=build_season_fixtures(p),
+    )
+
+    snap = close_season(p, progress, 1, rng=random.Random(1))
+    assert "Copa del Rey" not in snap.trophies
 
 
 def test_close_season_awards_league_only_when_table_champion():

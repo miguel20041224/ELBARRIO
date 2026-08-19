@@ -130,6 +130,15 @@ def _colombia_league_plan(club: Club, league_name: str, rng: random.Random) -> l
     return fixtures
 
 
+def _survives_round(club: Club, rng: random.Random) -> bool:
+    """Probabilidad de superar una ronda eliminatoria.
+
+    Sin esto el calendario generaba siempre todas las rondas hasta la final, así
+    que al club nunca lo eliminaban antes de tiempo y los títulos se inflaban.
+    """
+    return rng.random() < 0.30 + (club.prestige / 100) * 0.45
+
+
 def _domestic_cup(club: Club, country: str, rng: random.Random, start_week: int) -> list[Fixture]:
     candidates = [c for c in CLUBS.values() if c.id != club.id and (get_league(c.league_id) and get_league(c.league_id).country == country)]
     candidates.sort(key=lambda c: (abs(c.prestige - club.prestige), c.id))
@@ -163,6 +172,8 @@ def _domestic_cup(club: Club, country: str, rng: random.Random, start_week: int)
                 home_away="neutral" if stage_id == "final" else ("home" if idx % 2 == 0 else "away"),
             )
         )
+        if stage_id != "final" and not _survives_round(club, rng):
+            break
     return fixtures
 
 
@@ -196,6 +207,32 @@ def _continental_cup(club: Club, country: str, league_tier: int, rng: random.Ran
                 home_away="home" if idx % 2 == 0 else "away",
             )
         )
+
+    if not _survives_round(club, rng):
+        return fixtures
+
+    knockout_stages = [
+        ("round-16", "Round of 16"),
+        ("quarterfinal", "Quarterfinal"),
+        ("semifinal", "Semifinal"),
+        ("final", "Final"),
+    ]
+    for idx, (stage_id, stage_display) in enumerate(knockout_stages):
+        opponent = candidates[(6 + idx) % len(candidates)]
+        fixtures.append(
+            _fixture(
+                week=start_week + len(fixtures),
+                competition_id=competition_id,
+                competition_name=competition_name,
+                stage_id=stage_id,
+                stage_display=stage_display,
+                club=club,
+                opponent=opponent,
+                home_away="neutral" if stage_id == "final" else ("home" if idx % 2 == 0 else "away"),
+            )
+        )
+        if stage_id != "final" and not _survives_round(club, rng):
+            break
     return fixtures
 
 
@@ -225,6 +262,7 @@ def ensure_season_fixtures(
     progress: SeasonProgress,
     season_number: int = 1,
 ) -> SeasonProgress:
+    progress.season = season_number
     if not progress.fixtures:
         progress.fixtures = build_season_fixtures(player, season_number)
     if progress.fixtures:
@@ -234,20 +272,30 @@ def ensure_season_fixtures(
 
 
 
-def _projected_points_for(club: Club, played: int) -> int:
+def _club_form_factor(club: Club, season: int) -> float:
+    """Desvío de rendimiento del club en esa temporada, estable entre llamadas.
+
+    Sin él la proyección depende solo del prestigio, así que clubes de prestigio
+    parecido terminaban con registros idénticos hasta el gol (B11). Va sembrado
+    con la temporada para que un club tenga años buenos y malos en vez de rendir
+    siempre igual respecto a su prestigio.
+    """
+    return random.Random(f"{club.id}:{season}").uniform(-0.35, 0.35)
+
+
+def _projected_record_for(club: Club, played: int, season: int) -> tuple[int, int, int, int, int, int]:
     if played <= 0:
-        return 0
-    expected_ppg = 0.75 + (club.prestige / 100) * 1.45
-    return min(played * 3, round(played * expected_ppg))
+        return 0, 0, 0, 0, 0, 0
+    form = _club_form_factor(club, season)
+    expected_ppg = max(0.2, 0.75 + (club.prestige / 100) * 1.45 + form)
+    projected_points = min(played * 3, round(played * expected_ppg))
 
-
-def _projected_record_for(club: Club, played: int) -> tuple[int, int, int, int, int, int]:
-    points = _projected_points_for(club, played)
-    wins = min(played, points // 3)
-    draws = min(played - wins, points - wins * 3)
+    wins = min(played, projected_points // 3)
+    draws = min(played - wins, projected_points - wins * 3)
     losses = max(0, played - wins - draws)
-    goals_for = max(0, round(played * (0.8 + club.prestige / 70)))
-    goals_against = max(0, round(played * (1.8 - club.prestige / 120)))
+    points = wins * 3 + draws
+    goals_for = max(0, round(played * max(0.2, 0.8 + club.prestige / 70 + form)))
+    goals_against = max(0, round(played * max(0.2, 1.8 - club.prestige / 120 - form)))
     return wins, draws, losses, goals_for, goals_against, points
 
 
@@ -272,8 +320,8 @@ def build_league_table(player: Player, progress: SeasonProgress) -> list[LeagueT
     if league_wins + league_draws + league_losses == 0:
         league_wins, league_draws, league_losses = progress.wins, progress.draws, progress.losses
     player_points = league_wins * 3 + league_draws
-    player_goals_for = sum(m.goalsFor for m in progress.recentMatches if m.competitionId == club.league_id)
-    player_goals_against = sum(m.goalsAgainst for m in progress.recentMatches if m.competitionId == club.league_id)
+    player_goals_for = sum(m.goalsFor for m in progress.matchHistory if m.competitionId == club.league_id)
+    player_goals_against = sum(m.goalsAgainst for m in progress.matchHistory if m.competitionId == club.league_id)
     if player_goals_for == 0 and player_goals_against == 0:
         player_goals_for = max(0, league_wins * 2 + league_draws)
         player_goals_against = max(0, league_losses * 2 + league_draws)
@@ -284,7 +332,7 @@ def build_league_table(player: Player, progress: SeasonProgress) -> list[LeagueT
             wins, draws, losses = league_wins, league_draws, league_losses
             gf, ga, points = player_goals_for, player_goals_against, player_points
         else:
-            wins, draws, losses, gf, ga, points = _projected_record_for(league_club, played)
+            wins, draws, losses, gf, ga, points = _projected_record_for(league_club, played, progress.season)
         rows.append(
             LeagueTableEntry(
                 position=0,
@@ -318,11 +366,10 @@ def refresh_league_table(player: Player, progress: SeasonProgress) -> SeasonProg
 
 def _knockout_trophies(progress: SeasonProgress, league_id: str) -> list[str]:
     trophies: list[str] = []
-    for match in progress.recentMatches:
+    for match in progress.matchHistory:
         if match.competitionId == league_id:
             continue
-        is_final = "final" in match.stageDisplay.lower() or match.stageDisplay.lower() == "final"
-        if is_final and match.result == "W" and match.competitionName not in trophies:
+        if match.stageId == "final" and match.result == "W" and match.competitionName not in trophies:
             trophies.append(match.competitionName)
     return trophies
 

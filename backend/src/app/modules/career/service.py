@@ -112,7 +112,9 @@ def _to_response(model: CareerSessionModel) -> CareerSession:
         mode=model.mode,
         currentSeason=model.current_season,
         history=history,
-        seasonProgress=progress,
+        # matchHistory se persiste entero para calcular tabla y trofeos, pero no
+        # viaja al cliente: recentMatches es la ventana de presentación.
+        seasonProgress=progress.model_copy(update={"matchHistory": []}),
         seasonComplete=season_complete,
         pendingEventId=model.pending_event_id,
         pendingEvent=pending_event,
@@ -232,6 +234,9 @@ def _record_match_progress(player: Player, progress: SeasonProgress, match: Matc
     if len(recent) > RECENT_MATCH_LIMIT:
         recent = recent[-RECENT_MATCH_LIMIT:]
     progress.recentMatches = recent
+    history = list(progress.matchHistory or [])
+    history.append(match)
+    progress.matchHistory = history
     progress = refresh_league_table(player, progress)
     return SeasonProgress(**progress.model_dump())
 

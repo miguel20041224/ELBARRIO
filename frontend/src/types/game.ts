@@ -229,6 +229,7 @@ export interface MatchResult {
   week: number;
   competitionId: string;
   competitionName: string;
+  stageId: string;
   stageDisplay: string;
   opponentId: string;
   opponentName: string;
@@ -264,6 +265,7 @@ export interface LeagueTableEntry {
 }
 
 export interface SeasonProgress {
+  season: number;
   matchesPlayed: number;
   matchesTotal: number;
   eventsUsed: number;
