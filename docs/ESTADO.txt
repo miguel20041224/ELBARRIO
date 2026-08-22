@@ -1,6 +1,6 @@
 ELBARRIO — ESTADO DEL TRABAJO
-Actualizado: 2026-08-19
-Rama: main · Último commit: cba457f · Árbol limpio y sincronizado con origin/main
+Actualizado: 2026-08-22
+Rama: main · Último commit: 7d5f926 · Árbol limpio
 
 
 ================================================================================
@@ -164,6 +164,9 @@ Siguiente trabajo: P1-P10 de research/copero/INFORME.md.
     research/copero/ es el corpus crawleado de potrerofutbol.ar/el-idolo, la
     referencia de diseño. INFORME.md tiene las diez mejoras propuestas.
 
+La auditoría que este punto pedía correr antes de empezar ya se corrió: está en
+los puntos 7 y 8, y quedó en cero. No hay nada que bloquee P1-P10.
+
 Antes de arrancar conviene leer, en este orden:
 
     1. research/copero/INFORME.md          (las mejoras P1-P10)
@@ -174,12 +177,107 @@ Pendiente conocido, preexistente, NO bloqueante:
 
     · Los premios no distinguen entre ligas. Un "Mejor Defensor" en Primera A
       de Colombia pesa lo mismo que en LaLiga.
-    · Las herramientas de auditoría de research/elbarrio-validation/
-      (runner.py, analyze.py, robustness.py) no se corrieron después de los
-      Bloques C y D. FASE0.md sección 12 recomienda pasarlas sobre 24 carreras
-      después de cada bloque para verificar que los 20 invariantes no
-      retrocedieron. Son caras (minutos), no van a CI. Vale la pena correrlas
-      una vez antes de empezar P1-P10.
+    · play-match no tiene clave de idempotencia (T2). Tres POST idénticos
+      avanzan tres partidos.
+    · La API no expone version ni ETag (T7), así que una pestaña vieja no puede
+      darse cuenta de que quedó desactualizada. La columna version YA existe en
+      la base desde el Bloque B: falta sacarla en la respuesta.
+
+
+================================================================================
+7. AUDITORÍA POST-BLOQUES C Y D (2026-08-22)
+================================================================================
+
+Se corrió la auditoría completa que quedaba pendiente. 24 carreras de 15
+temporadas, 360 temporadas, 11.513 partidos, 0 errores y 0 stalls.
+
+    cd backend
+    PYTHONPATH=$PWD/src poetry run python \
+        ../research/elbarrio-validation/runner.py --careers 24 --seasons 15 \
+        --out ../research/elbarrio-validation/runs
+    poetry run python ../research/elbarrio-validation/analyze.py
+    PYTHONPATH=$PWD/src poetry run python \
+        ../research/elbarrio-validation/robustness.py
+
+Robustez: 4 fallas -> 2. Se arreglaron solas con los Bloques B y C.
+
+    T3 play-match concurrente   8/8 devolvían 200, 7 escrituras perdidas -> 0
+    T8 diferencia de gol        tabla GF=3/GC=11 vs real 40/67 -> coinciden
+    T2, T7                      siguen fallando (ver pendientes arriba)
+
+Invariantes: la primera corrida dio 468 violaciones. 404 eran EL ARNÉS
+desactualizado, no el motor:
+
+    I16 (357)  comparaba matchesPlayed contra el número de fixtures. El Bloque B
+               lo redefinió como apariciones y movió las convocatorias a
+               callUps. Cada partido en el banco contaba como violación.
+    I19 (111)  detectaba finales con "final" in stageDisplay. Es el MISMO bug de
+               substring que el Bloque C arregló en el motor: "final" in
+               "semifinal" es True. El arnés seguía teniéndolo.
+
+Con la semántica correcta las dos dan cero. Se agregaron I21 (callUps ==
+fixtures), I22 (ganar la semi lleva a jugar la final) e I23 (una eliminatoria
+empatada se define por penales). Commit 8077f17.
+
+Las 64 violaciones restantes eran reales y tenían una sola causa. Ver punto 8.
+
+Estado final: 23 de 23 invariantes en cero.
+
+
+================================================================================
+8. EL CUADRO DE ELIMINATORIAS NO MIRABA LOS RESULTADOS
+================================================================================
+
+_survives_round tiraba un dado contra el prestigio del club AL GENERAR el
+calendario, antes de jugar un solo partido, y cortaba el cuadro ahí. El
+resultado del jugador nunca volvía a entrar. Sobre 931 transiciones de ronda:
+
+    avanzó habiendo empatado o perdido     354  (38 %)
+    eliminado habiendo ganado              127  (14 %)
+    semifinales ganadas sin final después   27
+    finales empatadas sin coronar a nadie   37
+
+Es la misma clase de problema que el Bloque C: el motor no medía lo que la
+competición pedía. Ganar la semifinal no significaba nada.
+
+Arreglado en 99838dc. El calendario dibuja el cuadro entero SIEMPRE y el
+resultado lo poda:
+
+    · drop_eliminated_fixtures saca las rondas que el club ya no va a jugar.
+      Solo toca fixtures posteriores al partido en curso y solo de esa
+      competición: quedar afuera de la copa no te borra los partidos de liga.
+    · La clasificación de la fase de liga continental se decide por puntos
+      (LEAGUE_PHASE_QUALIFYING_POINTS = 7 sobre 6 partidos), no por el dado.
+    · Una eliminatoria empatada a los 90' va a penales. MatchResult tiene
+      penaltiesFor/penaltiesAgainst, que se completan SOLO en eliminatoria, así
+      que el marcador sigue siendo coherente con la etiqueta W/D/L y el I05 no
+      se rompe. Los trofeos leen la tanda: una final ganada por penales es una
+      final ganada.
+    · La fila de partido muestra "1-1 (4-2 pen.)" para que la UI no muestre una
+      D pelada en una final que sí definió campeón.
+
+Las reglas compartidas viven en backend/src/app/modules/simulation/competitions.py
+(KNOCKOUT_STAGES, advanced(), needs_shootout(), league_phase_points()), que no
+importa nada de season ni de match para no acoplarlos.
+
+Medido sobre 24 carreras nuevas:
+
+    transiciones de ronda coherentes con el resultado    853/853
+    eliminatorias definidas por penales                  27,5 %
+    trofeos por temporada (todas las carreras)           0,40 -> 0,23
+    temporadas con título EN CLUB GRANDE                 30 %
+
+Ese último número es el que importa: 30 % es exactamente la referencia contra la
+que se calibraron los umbrales de premios en cba457f, así que la calibración
+sigue en pie. La media global bajó porque los clubes chicos ya no ganan copas
+por dado de prestigio, que es justo lo que se quería.
+
+Verificación al cerrar:
+
+    backend    114/114 tests pasando
+    frontend   tsc --noEmit limpio
+    frontend   build OK
+    auditoría  0 violaciones sobre 23 invariantes
 
 
 ================================================================================
