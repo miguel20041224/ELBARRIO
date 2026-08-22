@@ -37,9 +37,11 @@ export default function RetirementPanel({ offer, busy, onResolve }: Props) {
         </ul>
       )}
 
-      <p className="rounded border border-amber-500/40 bg-amber-950/30 p-3 text-sm text-amber-200/90">
-        {offer.stayWarning}
-      </p>
+      {!offer.forced && (
+        <p className="rounded border border-amber-500/40 bg-amber-950/30 p-3 text-sm text-amber-200/90">
+          {offer.stayWarning}
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <button
@@ -50,14 +52,17 @@ export default function RetirementPanel({ offer, busy, onResolve }: Props) {
         >
           Colgar los botines
         </button>
-        <button
-          type="button"
-          className="btn"
-          disabled={busy || confirming}
-          onClick={() => resolve(false)}
-        >
-          Seguir un año más
-        </button>
+        {/* A los 40 seguir ya no es una opción: ofrecerla sería mentir. */}
+        {!offer.forced && (
+          <button
+            type="button"
+            className="btn"
+            disabled={busy || confirming}
+            onClick={() => resolve(false)}
+          >
+            Seguir un año más
+          </button>
+        )}
       </div>
     </div>
   );

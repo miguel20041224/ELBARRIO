@@ -26,6 +26,7 @@ from app.modules.roulette.service import (
 )
 from app.modules.simulation.development import build_retirement_offer, should_offer_retirement
 from app.modules.simulation.match import build_match_selection, simulate_match
+from app.modules.career.verdict import build_career_verdict
 from app.modules.player.rating import overall
 from app.modules.player.valuation import market_value
 from app.modules.simulation.season import (
@@ -49,6 +50,7 @@ from app.schemas import (
     RetirementOffer,
     RouletteRoll,
     SeasonProgress,
+    CareerVerdict,
     SeasonSnapshot,
     TransferOffer,
     TransferWindow,
@@ -93,6 +95,16 @@ def _club_info(club_id: str | None) -> ClubInfo | None:
         prestige=club.prestige,
         budget=club.budget,
         nickname=club.nickname,
+    )
+
+
+def _career_verdict(player: Player, history: list[SeasonSnapshot]) -> CareerVerdict:
+    return build_career_verdict(
+        peak_overall=max((snap.overall for snap in history), default=overall(player)),
+        seasons=len(history),
+        team_titles=sum(1 for t in player.trophies if t.kind == "team"),
+        individual_awards=sum(1 for t in player.trophies if t.kind == "individual"),
+        clubs=len({snap.clubId for snap in history if snap.clubId}),
     )
 
 
@@ -146,6 +158,7 @@ def _to_response(model: CareerSessionModel) -> CareerSession:
         nextMatchSelection=next_selection,
         overall=overall(player),
         marketValue=market_value(player),
+        careerVerdict=_career_verdict(player, history) if player.retired else None,
     )
 
 
@@ -470,7 +483,9 @@ def resolve_retirement(session_id: str, retire: bool, db: Session) -> CareerSess
         return None
 
     player = Player(**model.player_data)
-    if retire:
+    offer = RetirementOffer(**model.pending_retirement)
+    if retire or offer.forced:
+        # A los 40 la carrera se cierra igual: rechazarla no es una opción.
         player.retired = True
         _persist(model, player, db, retirement=None, roulette=None, transfer=None)
         return _to_response(model)

@@ -425,10 +425,25 @@ class RetirementOffer(BaseModel):
     stayWarning: str
     seasonsPlayed: int
     age: int
+    # Cuando es forzada no hay decisión: seguir un año más deja de ser opción.
+    forced: bool = False
 
 
 class ResolveRetirementPayload(BaseModel):
     retire: bool
+
+
+class CareerVerdict(BaseModel):
+    """Lectura de una carrera terminada. Solo existe cuando el jugador se retiró."""
+
+    tier: int
+    title: str
+    summary: str
+    peakOverall: int
+    seasons: int
+    teamTitles: int
+    individualAwards: int
+    clubs: int
 
 
 class CareerSession(BaseModel):
@@ -452,3 +467,4 @@ class CareerSession(BaseModel):
     # los dejaría contradecir al jugador que los produce.
     overall: int = 0
     marketValue: float = 0.0
+    careerVerdict: CareerVerdict | None = None

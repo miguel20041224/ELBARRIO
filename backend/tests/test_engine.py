@@ -25,7 +25,12 @@ from app.modules.player.rating import (
     overall,
 )
 from app.modules.player.valuation import market_value
-from app.modules.simulation.development import develop_player, should_offer_retirement
+from app.modules.career.verdict import build_career_verdict
+from app.modules.simulation.development import (
+    RETIREMENT_FORCED_AGE,
+    develop_player,
+    should_offer_retirement,
+)
 from app.modules.roulette.service import apply_outcome, build_roulette, find_outcome
 from app.modules.simulation.match import build_match_selection, simulate_match
 from app.modules.simulation.season import (
@@ -43,7 +48,11 @@ from app.modules.career.service import (
     advance_season,
     create_career,
     get_career,
+    accept_transfer,
     play_match,
+    resolve_event,
+    resolve_retirement,
+    spin_roulette,
 )
 from app.modules.transfers.service import (
     apply_transfer,
@@ -1549,3 +1558,130 @@ def test_season_snapshot_records_the_overall_of_that_season():
 
     assert snap.overall > 0
     assert snap.marketValue > 0
+
+
+# --- Fase 2: la carrera termina -------------------------------------------
+
+
+def _play_until_retired(db, session, *, accept_retirement: bool, age_limit: int = 70):
+    """Corre una carrera por el service completo hasta que el jugador se retira.
+
+    Devuelve la sesión final. Aborta si la carrera pasa de `age_limit`, que es
+    la forma de detectar que no hay cierre en vez de colgarse para siempre.
+    """
+    while not session.player.retired:
+        assert session.player.age <= age_limit, (
+            f"la carrera llegó a los {session.player.age} años sin terminar"
+        )
+        if session.pendingRetirement:
+            session = resolve_retirement(session.id, accept_retirement, db)
+            continue
+        if session.pendingRoulette:
+            session = spin_roulette(
+                session.id, session.pendingRoulette.options[0].id, db
+            )
+            continue
+        if session.pendingTransferWindow:
+            # offer_id None es "me quedo donde estoy".
+            session = accept_transfer(session.id, None, db)
+            continue
+        if session.pendingEvent:
+            session = resolve_event(session.id, session.pendingEvent.choices[0].id, db)
+            continue
+        if session.seasonComplete:
+            session = advance_season(session.id, db)
+            continue
+        session = play_match(session.id, db)
+    return session
+
+
+def test_a_career_that_accepts_retirement_reaches_an_end():
+    db = _memory_db()
+    try:
+        session = create_career(CreateCareerPayload(draft=make_draft(position="ST")), db)
+        session = _play_until_retired(db, session, accept_retirement=True)
+
+        assert session.player.retired
+        assert session.history, "una carrera terminada tiene temporadas en el historial"
+    finally:
+        db.close()
+
+
+def test_a_career_that_always_refuses_still_ends():
+    """D2: se podía rechazar el retiro para siempre y llegar a los 60 jugando."""
+    db = _memory_db()
+    try:
+        session = create_career(CreateCareerPayload(draft=make_draft(position="ST")), db)
+        session = _play_until_retired(db, session, accept_retirement=False)
+
+        assert session.player.retired
+        assert session.player.age <= RETIREMENT_FORCED_AGE
+    finally:
+        db.close()
+
+
+def test_a_full_career_rises_and_then_declines():
+    """La curva de OVR tiene que subir y después caer: si sólo sube, no hay
+    declive; si sólo baja, no hay progresión."""
+    db = _memory_db()
+    try:
+        session = create_career(CreateCareerPayload(draft=make_draft(position="ST")), db)
+        session = _play_until_retired(db, session, accept_retirement=False)
+
+        curve = [snap.overall for snap in session.history]
+        assert len(curve) >= 10
+        peak = curve.index(max(curve))
+        assert curve[peak] > curve[0], "el OVR nunca creció"
+        assert curve[-1] < curve[peak], "el OVR nunca declinó"
+    finally:
+        db.close()
+
+
+# --- Fase 2: veredicto de carrera -----------------------------------------
+
+
+def test_verdict_is_absent_while_the_career_is_running():
+    db = _memory_db()
+    try:
+        session = create_career(CreateCareerPayload(draft=make_draft(position="ST")), db)
+        assert session.careerVerdict is None
+    finally:
+        db.close()
+
+
+def test_verdict_appears_once_the_player_retires():
+    db = _memory_db()
+    try:
+        session = create_career(CreateCareerPayload(draft=make_draft(position="ST")), db)
+        session = _play_until_retired(db, session, accept_retirement=True)
+
+        verdict = session.careerVerdict
+        assert verdict is not None
+        assert verdict.title
+        assert verdict.summary
+        assert verdict.peakOverall > 0
+        assert verdict.seasons == len(session.history)
+    finally:
+        db.close()
+
+
+def test_verdict_ranks_a_decorated_career_above_a_quiet_one():
+    """Un palmarés cargado no puede leerse igual que una carrera sin títulos."""
+    legend = build_career_verdict(
+        peak_overall=92, seasons=20, team_titles=14, individual_awards=6, clubs=3
+    )
+    journeyman = build_career_verdict(
+        peak_overall=64, seasons=20, team_titles=0, individual_awards=0, clubs=7
+    )
+
+    assert legend.tier > journeyman.tier
+    assert legend.title != journeyman.title
+
+
+def test_verdict_tier_is_bounded():
+    for peak, titles, awards in ((99, 30, 20), (20, 0, 0)):
+        verdict = build_career_verdict(
+            peak_overall=peak, seasons=20, team_titles=titles,
+            individual_awards=awards, clubs=2,
+        )
+        assert 1 <= verdict.tier <= 5

@@ -16,6 +16,11 @@ RETIREMENT_WATCH_AGE = 32
 # Edad a partir de la cual el retiro se ofrece siempre.
 RETIREMENT_CERTAIN_AGE = 36
 
+# Edad a la que la carrera se termina aunque el jugador quiera seguir. Sin este
+# techo la oferta se podía rechazar indefinidamente y la edad subía sola: una
+# carrera llegaba a los 60 años en cancha.
+RETIREMENT_FORCED_AGE = 40
+
 # Cada temporada jugada tras rechazar el retiro acelera la caída.
 DECLINE_PENALTY_PER_REFUSAL = 0.22
 
@@ -135,19 +140,28 @@ def should_offer_retirement(player: Player, snapshot: SeasonSnapshot) -> bool:
     return snapshot.minutesPlayed < 900 or snapshot.averageRating < 6.3
 
 
+def is_retirement_forced(player: Player) -> bool:
+    """A los 40 no hay decisión que tomar: la carrera se terminó."""
+    return not player.retired and player.age >= RETIREMENT_FORCED_AGE
+
+
 def build_retirement_offer(
     player: Player,
     snapshot: SeasonSnapshot,
     seasons_played: int,
 ) -> RetirementOffer:
-    if player.age >= RETIREMENT_CERTAIN_AGE:
+    forced = is_retirement_forced(player)
+    if forced:
+        message = "Hasta acá llegó. A esta edad ya no hay una temporada más que estirar."
+    elif player.age >= RETIREMENT_CERTAIN_AGE:
         message = "Las piernas ya no responden igual. Nadie te va a discutir la decisión."
     else:
         message = "El cuerpo empieza a pasar factura y los minutos se achican."
 
     return RetirementOffer(
-        title="¿Colgás los botines?",
+        title="Se terminó" if forced else "¿Colgás los botines?",
         message=message,
+        forced=forced,
         reasons=_decline_reasons(player, snapshot),
         stayWarning=(
             "Si seguís, tus atributos van a caer más rápido, vas a jugar menos "

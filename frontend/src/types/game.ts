@@ -149,6 +149,7 @@ export interface RetirementOffer {
   stayWarning: string;
   seasonsPlayed: number;
   age: number;
+  forced: boolean;
 }
 
 export type EventCategory =
@@ -395,6 +396,19 @@ export interface CareerSession {
   /** Derived from the player's attributes on every response, never stored. */
   overall: number;
   marketValue: number;
+  /** Only present once the player has retired. */
+  careerVerdict: CareerVerdict | null;
+}
+
+export interface CareerVerdict {
+  tier: number;
+  title: string;
+  summary: string;
+  peakOverall: number;
+  seasons: number;
+  teamTitles: number;
+  individualAwards: number;
+  clubs: number;
 }
 
 export interface SeasonSnapshot {
