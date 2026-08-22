@@ -1,6 +1,6 @@
 ELBARRIO — ESTADO DEL TRABAJO
 Actualizado: 2026-08-22
-Rama: main · Último commit: 7d5f926 · Árbol limpio
+Rama: main · Último commit: 6e9b61e · Árbol limpio y sincronizado con origin/main
 
 
 ================================================================================
@@ -159,13 +159,14 @@ en esta sesión la causa no era el umbral sino que el dato no existía:
 5. QUÉ SIGUE
 ================================================================================
 
-Siguiente trabajo: P1-P10 de research/copero/INFORME.md.
+Siguiente trabajo: FASE 3 de research/copero/INFORME.md, sección 9.
 
     research/copero/ es el corpus crawleado de potrerofutbol.ar/el-idolo, la
-    referencia de diseño. INFORME.md tiene las diez mejoras propuestas.
+    referencia de diseño. El objetivo declarado es llegar a paridad con Copero
+    (P1-P10) y recién entonces construir features propias encima.
 
 La auditoría que este punto pedía correr antes de empezar ya se corrió: está en
-los puntos 7 y 8, y quedó en cero. No hay nada que bloquee P1-P10.
+los puntos 7 y 8, y quedó en cero. Las Fases 1 y 2 están cerradas: ver punto 9.
 
 Antes de arrancar conviene leer, en este orden:
 
@@ -311,3 +312,119 @@ Base de datos local:
     antes; borrar el archivo y correr "alembic upgrade head" de cero.
 
 Deploy: ver docs/DEPLOY.md
+
+
+================================================================================
+9. FASES 1 Y 2 DEL INFORME COPERO (2026-08-22)
+================================================================================
+
+Estado del plan de research/copero/INFORME.md, sección 9:
+
+    Fase 1  OVR y valor de mercado                        HECHA  (1c3ac80)
+    Fase 2  progresión, retiro y cierre de carrera        HECHA  (Bloque D + 6e9b61e)
+    Fase 3  timeline, celebración, ascensos/descensos     SIGUIENTE
+    Fase 4  ritmo elegible (la feature identitaria)       pendiente
+    Fase 5  selección nacional                            pendiente
+    Fase 6  probabilidades explícitas y catálogo de 50+   pendiente
+
+OJO al leer el INFORME: está escrito ANTES de los Bloques C y D, así que su
+sección 6.3 lista como pendientes cosas que ya están hechas. Verificar contra el
+código antes de planificar. La Fase 2 parecía entera y le faltaban dos items.
+
+--------------------------------------------------------------------------------
+FASE 1 — OVR y valor de mercado (1c3ac80)
+--------------------------------------------------------------------------------
+
+    player/rating.py      overall(player) -> 1-99, pesa al 55 % los tres
+                          atributos del puesto contra el promedio global
+    player/valuation.py   market_value(player) desde OVR, edad, reputación de
+                          liga, forma y reputación
+
+Ambos se derivan en CADA respuesta y no se persisten: guardarlos los dejaría
+contradecir a los atributos que los producen. La excepción deliberada es
+SeasonSnapshot, que sí los guarda, porque el OVR de una temporada pasada no se
+puede recalcular una vez que los atributos se movieron. Eso es historia, no
+estado derivable.
+
+rating.py es ahora la ÚNICA fuente de qué atributos definen cada puesto. Había
+dos tablas: factory.py decidía qué CRECE y match.py qué se MIDE. Coincidían en
+nueve puestos y en el arquero no solapaban en nada.
+
+Medido antes de afirmar nada: esa incoherencia valía ~1 punto de OVR en doce
+temporadas, porque develop_player hace crecer TODO y solo favorece a los clave
+(foco 1,0 contra 0,65). El daño real estaba en otro lado:
+
+    concentration, composure y jumping estaban hardcodeados en 55/50/60 y nunca
+    pasaban por _base_stat, así que un GK arrancaba en OVR 55 contra los 63 de
+    un ST. Ocho puntos de déficit estructural desde el minuto cero.
+
+    Ahora ambos arrancan en 63. GK: rating 6,02 -> 6,12, minutos 1038 -> 1243.
+
+Unificar la tabla vale por impedir que las dos definiciones vuelvan a divergir,
+NO por el balance.
+
+Curva de OVR medida por puesto (inicial -> pico medio, 15 temporadas):
+
+    ST   67 -> 78 (+10)   valor pico mediano  €18,6M
+    CDM  65 -> 71 (+6)                        €10,7M
+    LW   67 -> 71 (+5)                         €9,5M
+    GK   64 -> 68 (+4)                         €4,2M
+    CM   64 -> 66 (+2)                         €2,4M
+
+--------------------------------------------------------------------------------
+FASE 2 — cierre de carrera (6e9b61e)
+--------------------------------------------------------------------------------
+
+El Bloque D ya había hecho potential, progresión y la oferta de retiro. Faltaban
+el item 8 (pantalla de cierre) y el item 9 (test de carrera completa).
+
+Escribir el test destapó que D2 SEGUÍA VIVO a medias: la oferta se podía
+rechazar para siempre. should_offer_retirement devuelve True desde los 36, pero
+nada frenaba al jugador y season.py:478 sumaba edad sin techo. La carrera de 60
+años seguía siendo posible.
+
+    RETIREMENT_FORCED_AGE = 40. La oferta reporta forced, resolve_retirement
+    retira sin importar la respuesta, y el panel SACA el botón de "seguir un año
+    más": ofrecer una opción que no existe es mentirle al usuario.
+
+career/verdict.py lee una carrera terminada en cinco escalones, pesando lo
+ganado por encima del nivel alcanzado. Calibrado contra carreras reales:
+
+    20 temp · 14 títulos · OVR 92  -> Leyenda
+    17 temp ·  6 títulos · OVR 73  -> Ídolo        (Real Madrid, carrera real)
+    17 temp ·  2 títulos · OVR 66  -> Profesional  (Getafe, carrera real)
+    20 temp ·  0 títulos · OVR 64  -> De barrio
+     4 temp ·  0 títulos · OVR 61  -> De barrio
+
+El caso Getafe caía en "De barrio" a un punto del umbral. Diecisiete temporadas
+en primera con dos títulos es una carrera profesional, así que se bajó el corte
+de tier 2 de 18 a 14. Ajustado contra el dato, no contra la intuición.
+
+La pantalla de cierre lleva veredicto, OVR máximo, curva, valor máximo y
+palmarés agrupado ("LaLiga ×3") en vez de un conteo suelto. OverallCurve se
+extrajo de SeasonHistory para que ambas pantallas dibujen el mismo gráfico.
+
+--------------------------------------------------------------------------------
+DECISIÓN PENDIENTE DE BALANCE
+--------------------------------------------------------------------------------
+
+Una carrera que rechaza el retiro seis veces traza esta curva:
+
+    67 -> 79 (pico a los 29) -> 28 a los 40
+
+OVR 28 es nivel amateur. Es el castigo compuesto de _decline_drive, que se
+multiplica por (1 + rechazos * 0,22) = 2,32x, y ESTÁ CALIBRADO ASÍ A PROPÓSITO
+desde cba457f: la advertencia que ve el jugador es literalmente cierta.
+
+Lo que cambió es que antes nadie lo veía y ahora el OVR está en pantalla. Si se
+quiere un piso (un profesional de 40 no baja de ~50) es un cambio de una línea
+en development.py. NO se tocó: es balance ya calibrado y la decisión es del
+dueño del juego.
+
+--------------------------------------------------------------------------------
+VERIFICACIÓN AL CERRAR
+--------------------------------------------------------------------------------
+
+    backend    136/136 tests pasando
+    frontend   tsc --noEmit limpio · build OK
+    auditoría  0 violaciones sobre 23 invariantes (24 carreras, 360 temporadas)
