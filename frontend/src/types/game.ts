@@ -257,6 +257,9 @@ export interface MatchResult {
   narrative: string;
   momPlayer: boolean;
   isClasico: boolean;
+  /** Only set when a knockout tie was level after 90 minutes. */
+  penaltiesFor: number | null;
+  penaltiesAgainst: number | null;
 }
 
 

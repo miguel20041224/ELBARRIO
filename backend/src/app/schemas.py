@@ -259,6 +259,9 @@ class MatchResult(BaseModel):
     narrative: str
     momPlayer: bool = False
     isClasico: bool = False
+    # Solo se completan cuando una eliminatoria termina empatada a los 90'.
+    penaltiesFor: int | None = None
+    penaltiesAgainst: int | None = None
 
 
 

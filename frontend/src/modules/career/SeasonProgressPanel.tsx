@@ -263,10 +263,19 @@ function MatchRow({ match }: { match: MatchResult }) {
     D: "text-barrio-muted",
     L: "text-barrio-danger",
   }[match.result];
-  const scoreDisplay =
-    match.homeAway === "home" || match.homeAway === "neutral"
-      ? `${match.goalsFor}-${match.goalsAgainst}`
-      : `${match.goalsAgainst}-${match.goalsFor}`;
+  const homeFirst = match.homeAway === "home" || match.homeAway === "neutral";
+  const regulationScore = homeFirst
+    ? `${match.goalsFor}-${match.goalsAgainst}`
+    : `${match.goalsAgainst}-${match.goalsFor}`;
+  // A knockout tie level after 90 minutes is settled on penalties, so the plain
+  // scoreline would read as a draw that decided nothing.
+  const shootout =
+    match.penaltiesFor !== null && match.penaltiesAgainst !== null
+      ? homeFirst
+        ? ` (${match.penaltiesFor}-${match.penaltiesAgainst} pen.)`
+        : ` (${match.penaltiesAgainst}-${match.penaltiesFor} pen.)`
+      : "";
+  const scoreDisplay = `${regulationScore}${shootout}`;
   const venue =
     match.homeAway === "home" ? "vs" : match.homeAway === "away" ? "@" : "N";
 

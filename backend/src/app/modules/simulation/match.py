@@ -1,6 +1,7 @@
 import math
 import random
 from app.modules.clubs.data import Club, get_club, get_clubs_for_league
+from app.modules.simulation.competitions import needs_shootout
 from app.schemas import Fixture, MatchResult, MatchSelection, Player
 
 
@@ -279,6 +280,7 @@ def _generate_narrative(
     goals: int,
     assists: int,
     starter: bool,
+    penalties: tuple[int | None, int | None] = (None, None),
 ) -> str:
     if home_away == "home":
         where = "de local"
@@ -287,6 +289,11 @@ def _generate_narrative(
     else:
         where = f"de visitante en {opponent.city}"
     outcome = {"W": f"Ganaron {gf}-{ga}", "D": f"Empataron {gf}-{ga}", "L": f"Perdieron {gf}-{ga}"}[result]
+
+    pens_for, pens_against = penalties
+    if pens_for is not None and pens_against is not None:
+        passed = "Pasaron" if pens_for > pens_against else "Quedaron afuera"
+        outcome = f"{outcome} y {passed.lower()} {pens_for}-{pens_against} en los penales"
 
     if minutes == 0:
         return f"{outcome} contra {opponent.short_name} {where}. Vos te quedaste en el banco."
@@ -301,6 +308,24 @@ def _generate_narrative(
         parts.append(f", diste {assists} asistencia{'s' if assists > 1 else ''}")
     parts.append(".")
     return "".join(parts)
+
+
+def _penalty_shootout(club: Club, opponent: Club, r: random.Random) -> tuple[int, int]:
+    """Tanda de cinco tiros, con muerte súbita si siguen iguales.
+
+    El prestigio inclina la tanda apenas: los penales son mucho más parejos que
+    el juego, y una final no puede quedar sin campeón.
+    """
+    edge = (club.prestige - opponent.prestige) / 100
+    our_rate = min(0.9, max(0.6, 0.75 + edge * 0.08))
+    their_rate = min(0.9, max(0.6, 0.75 - edge * 0.08))
+
+    ours = sum(1 for _ in range(5) if r.random() < our_rate)
+    theirs = sum(1 for _ in range(5) if r.random() < their_rate)
+    while ours == theirs:
+        ours += 1 if r.random() < our_rate else 0
+        theirs += 1 if r.random() < their_rate else 0
+    return ours, theirs
 
 
 def simulate_match(
@@ -338,6 +363,11 @@ def simulate_match(
     if minutes == 0:
         home = fixture_home_away or ("home" if r.random() < 0.5 else "away")
         gf, ga, result = _compute_score(club, opponent, 6.5, home, r)
+        pens_for, pens_against = (
+            _penalty_shootout(club, opponent, r)
+            if fixture and needs_shootout(fixture.stageId, result)
+            else (None, None)
+        )
         return MatchResult(
             matchNumber=match_number,
             week=fixture.week if fixture else 0,
@@ -357,8 +387,13 @@ def simulate_match(
             assists=0,
             rating=6.0,
             starter=False,
-            narrative=_generate_narrative(player, result, gf, ga, opponent, home, 0, 0, 0, False),
+            narrative=_generate_narrative(
+                player, result, gf, ga, opponent, home, 0, 0, 0, False,
+                penalties=(pens_for, pens_against),
+            ),
             isClasico=fixture.isClasico if fixture else False,
+            penaltiesFor=pens_for,
+            penaltiesAgainst=pens_against,
         )
 
     home_away = fixture_home_away or ("home" if r.random() < 0.5 else "away")
@@ -419,8 +454,15 @@ def simulate_match(
 
     mom = _is_man_of_the_match(player.position, rating, goals, assists, ga)
 
+    pens_for, pens_against = (
+        _penalty_shootout(club, opponent, r)
+        if fixture and needs_shootout(fixture.stageId, result)
+        else (None, None)
+    )
+
     narrative = _generate_narrative(
-        player, result, gf, ga, opponent, home_away, minutes, goals, assists, starter
+        player, result, gf, ga, opponent, home_away, minutes, goals, assists, starter,
+        penalties=(pens_for, pens_against),
     )
 
     return MatchResult(
@@ -445,4 +487,6 @@ def simulate_match(
         narrative=narrative,
         momPlayer=mom,
         isClasico=fixture.isClasico if fixture else False,
+        penaltiesFor=pens_for,
+        penaltiesAgainst=pens_against,
     )

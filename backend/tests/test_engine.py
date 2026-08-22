@@ -26,6 +26,7 @@ from app.modules.simulation.season import (
     build_league_table,
     build_season_fixtures,
     close_season,
+    drop_eliminated_fixtures,
     ensure_season_fixtures,
 )
 from app.database import Base
@@ -167,32 +168,216 @@ def test_colombia_plan_has_short_regular_phase_playoffs_and_cup():
     assert len(fixtures) == len(league_regular) + len(playoffs) + len(cup)
 
 
-def test_domestic_cup_can_eliminate_before_the_final():
-    """B21: la copa generaba siempre las 4 rondas, así que nunca te eliminaban."""
+def test_domestic_cup_calendar_always_reaches_the_final():
+    """B27: el cuadro se dibuja entero; quién sigue en carrera lo decide el campo."""
     p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
-    rounds_seen = set()
     for season in range(60):
         fixtures = build_season_fixtures(p, season, rng=random.Random(season))
         cup = [f for f in fixtures if f.competitionId.startswith("domestic-cup-")]
-        rounds_seen.add(len(cup))
-
-    assert len(rounds_seen) > 1
-    assert min(rounds_seen) < 4
+        assert [f.stageId for f in cup] == ["round-16", "quarterfinal", "semifinal", "final"]
 
 
 def test_continental_cup_has_knockout_stages_and_a_final():
     """B5: la Champions solo generaba fase de liga, jamás una final."""
     p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
-    reached_final = False
     for season in range(60):
         fixtures = build_season_fixtures(p, season, rng=random.Random(season))
         continental = [f for f in fixtures if f.competitionId == "uefa-champions"]
         assert continental
-        if any(f.stageId == "final" for f in continental):
-            reached_final = True
-            assert any(f.stageId == "semifinal" for f in continental)
+        assert [f.stageId for f in continental if f.stageId != "league-phase"] == [
+            "round-16",
+            "quarterfinal",
+            "semifinal",
+            "final",
+        ]
 
-    assert reached_final
+
+def test_losing_a_knockout_round_drops_the_rounds_that_follow():
+    """B27: te eliminan cuando perdés en la cancha, no cuando lo dice un dado."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+    quarterfinal_index = next(
+        i for i, f in enumerate(progress.fixtures)
+        if f.competitionId.startswith("domestic-cup-") and f.stageId == "quarterfinal"
+    )
+    progress.matchesPlayed = quarterfinal_index + 1
+
+    progress = drop_eliminated_fixtures(
+        progress, _cup_match(stage_id="quarterfinal", stage_display="Quarterfinal", result="L")
+    )
+
+    remaining = [f.stageId for f in progress.fixtures if f.competitionId.startswith("domestic-cup-")]
+    assert remaining == ["round-16", "quarterfinal"]
+    assert progress.matchesTotal == len(progress.fixtures)
+    assert progress.matchesPlayed <= progress.matchesTotal
+
+
+def test_winning_a_knockout_round_keeps_the_rounds_that_follow():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+    quarterfinal_index = next(
+        i for i, f in enumerate(progress.fixtures)
+        if f.competitionId.startswith("domestic-cup-") and f.stageId == "quarterfinal"
+    )
+    progress.matchesPlayed = quarterfinal_index + 1
+    before = len(progress.fixtures)
+
+    progress = drop_eliminated_fixtures(
+        progress, _cup_match(stage_id="quarterfinal", stage_display="Quarterfinal", result="W")
+    )
+
+    assert len(progress.fixtures) == before
+
+
+def test_losing_a_knockout_round_leaves_other_competitions_alone():
+    """La eliminación en copa no puede borrarte los partidos de liga que quedan."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+    league_before = [f for f in progress.fixtures if f.competitionId == "esp-laliga"]
+    continental_before = [f for f in progress.fixtures if f.competitionId == "uefa-champions"]
+    progress.matchesPlayed = 1
+
+    progress = drop_eliminated_fixtures(
+        progress, _cup_match(stage_id="round-16", stage_display="Round of 16", result="L")
+    )
+
+    assert [f for f in progress.fixtures if f.competitionId == "esp-laliga"] == league_before
+    assert [f for f in progress.fixtures if f.competitionId == "uefa-champions"] == continental_before
+
+
+def test_knockout_draw_is_decided_on_penalties():
+    """B28: una final empatada no coronaba a nadie."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    fixture = Fixture(
+        week=1,
+        competitionId="domestic-cup-ES",
+        competitionName="Copa del Rey",
+        stageId="final",
+        stageDisplay="Final",
+        opponentId="esp-barcelona",
+        opponentName="FC Barcelona",
+        opponentShortName="Barça",
+        homeAway="neutral",
+    )
+    draws = 0
+    for seed in range(300):
+        match = simulate_match(p, 1, fixture=fixture, rng=random.Random(seed))
+        if match.result != "D":
+            assert match.penaltiesFor is None and match.penaltiesAgainst is None
+            continue
+        draws += 1
+        assert match.penaltiesFor is not None and match.penaltiesAgainst is not None
+        assert match.penaltiesFor != match.penaltiesAgainst
+
+    assert draws > 0, "la muestra no produjo ningún empate para desempatar"
+
+
+def test_league_stage_draw_is_not_taken_to_penalties():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    fixture = Fixture(
+        week=1,
+        competitionId="esp-laliga",
+        competitionName="LaLiga EA Sports",
+        stageId="regular",
+        stageDisplay="League",
+        opponentId="esp-barcelona",
+        opponentName="FC Barcelona",
+        opponentShortName="Barça",
+        homeAway="home",
+    )
+    for seed in range(120):
+        match = simulate_match(p, 1, fixture=fixture, rng=random.Random(seed))
+        assert match.penaltiesFor is None and match.penaltiesAgainst is None
+
+
+def test_final_won_on_penalties_awards_the_trophy():
+    """B28: ganar la final por penales es ganar la copa."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    shootout_win = _cup_match(stage_id="final", stage_display="Final", result="D")
+    shootout_win.goalsFor = 1
+    shootout_win.goalsAgainst = 1
+    shootout_win.penaltiesFor = 4
+    shootout_win.penaltiesAgainst = 2
+    progress = SeasonProgress(
+        matchesPlayed=1,
+        draws=1,
+        recentMatches=[shootout_win],
+        matchHistory=[shootout_win],
+        fixtures=build_season_fixtures(p),
+    )
+
+    snap = close_season(p, progress, 1, rng=random.Random(1))
+    assert "Copa del Rey" in snap.trophies
+
+
+def test_final_lost_on_penalties_awards_no_trophy():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    shootout_loss = _cup_match(stage_id="final", stage_display="Final", result="D")
+    shootout_loss.goalsFor = 1
+    shootout_loss.goalsAgainst = 1
+    shootout_loss.penaltiesFor = 3
+    shootout_loss.penaltiesAgainst = 5
+    progress = SeasonProgress(
+        matchesPlayed=1,
+        draws=1,
+        recentMatches=[shootout_loss],
+        matchHistory=[shootout_loss],
+        fixtures=build_season_fixtures(p),
+    )
+
+    snap = close_season(p, progress, 1, rng=random.Random(1))
+    assert "Copa del Rey" not in snap.trophies
+
+
+def test_missing_the_league_phase_cut_drops_the_continental_knockout():
+    """Clasificar a octavos se gana con puntos, no con un dado de prestigio."""
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+    league_phase = [
+        i for i, f in enumerate(progress.fixtures)
+        if f.competitionId == "uefa-champions" and f.stageId == "league-phase"
+    ]
+    progress.matchesPlayed = league_phase[-1] + 1
+    progress.matchHistory = [
+        _cup_match(
+            stage_id="league-phase",
+            stage_display="League phase",
+            result="L",
+            competition_name="Champions League",
+            competition_id="uefa-champions",
+        )
+        for _ in league_phase
+    ]
+
+    progress = drop_eliminated_fixtures(progress, progress.matchHistory[-1])
+
+    remaining = [f.stageId for f in progress.fixtures if f.competitionId == "uefa-champions"]
+    assert set(remaining) == {"league-phase"}
+
+
+def test_topping_the_league_phase_keeps_the_continental_knockout():
+    p = build_player_from_draft(make_draft(startingLeague="esp-laliga", startingClub="esp-realmadrid"))
+    progress = ensure_season_fixtures(p, SeasonProgress(), 1)
+    league_phase = [
+        i for i, f in enumerate(progress.fixtures)
+        if f.competitionId == "uefa-champions" and f.stageId == "league-phase"
+    ]
+    progress.matchesPlayed = league_phase[-1] + 1
+    progress.matchHistory = [
+        _cup_match(
+            stage_id="league-phase",
+            stage_display="League phase",
+            result="W",
+            competition_name="Champions League",
+            competition_id="uefa-champions",
+        )
+        for _ in league_phase
+    ]
+
+    progress = drop_eliminated_fixtures(progress, progress.matchHistory[-1])
+
+    remaining = [f.stageId for f in progress.fixtures if f.competitionId == "uefa-champions"]
+    assert "final" in remaining
 
 
 def test_ensure_season_fixtures_backfills_legacy_progress_and_total():
@@ -612,10 +797,12 @@ def test_league_table_uses_league_record_not_total_cup_wins():
     assert player_row.wins == 3
 
 
-def _cup_match(*, stage_id, stage_display, result, competition_name="Copa del Rey") -> MatchResult:
+def _cup_match(
+    *, stage_id, stage_display, result, competition_name="Copa del Rey", competition_id="domestic-cup-ES"
+) -> MatchResult:
     return MatchResult(
         matchNumber=1,
-        competitionId="domestic-cup-ES",
+        competitionId=competition_id,
         competitionName=competition_name,
         stageId=stage_id,
         stageDisplay=stage_display,

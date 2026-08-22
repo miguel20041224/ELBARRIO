@@ -1,6 +1,14 @@
 import random
 from app.modules.clubs.data import CLUBS, Club, get_club, get_clubs_for_league, get_league
 from app.modules.player.factory import key_attributes_for
+from app.modules.simulation.competitions import (
+    KNOCKOUT_STAGES,
+    LEAGUE_PHASE_QUALIFYING_POINTS,
+    LEAGUE_PHASE_STAGE,
+    advanced,
+    is_knockout,
+    league_phase_points,
+)
 from app.modules.simulation.development import develop_player
 from app.schemas import Fixture, LeagueTableEntry, MatchResult, Player, SeasonProgress, SeasonSnapshot, TrophyRecord
 
@@ -132,20 +140,11 @@ def _colombia_league_plan(club: Club, league_name: str, rng: random.Random) -> l
     return fixtures
 
 
-def _survives_round(club: Club, rng: random.Random) -> bool:
-    """Probabilidad de superar una ronda eliminatoria.
-
-    Sin esto el calendario generaba siempre todas las rondas hasta la final, así
-    que al club nunca lo eliminaban antes de tiempo y los títulos se inflaban.
-    """
-    return rng.random() < 0.30 + (club.prestige / 100) * 0.45
-
-
 def _domestic_cup(club: Club, country: str, rng: random.Random, start_week: int) -> list[Fixture]:
     candidates = [c for c in CLUBS.values() if c.id != club.id and (get_league(c.league_id) and get_league(c.league_id).country == country)]
     candidates.sort(key=lambda c: (abs(c.prestige - club.prestige), c.id))
     rng.shuffle(candidates)
-    stages = [("round-16", "Round of 16"), ("quarterfinal", "Quarterfinal"), ("semifinal", "Semifinal"), ("final", "Final")]
+    stages = list(zip(KNOCKOUT_STAGES, ("Round of 16", "Quarterfinal", "Semifinal", "Final")))
     cup_name_by_country = {
         "CO": "Copa Colombia",
         "AR": "Copa Argentina",
@@ -174,8 +173,6 @@ def _domestic_cup(club: Club, country: str, rng: random.Random, start_week: int)
                 home_away="neutral" if stage_id == "final" else ("home" if idx % 2 == 0 else "away"),
             )
         )
-        if stage_id != "final" and not _survives_round(club, rng):
-            break
     return fixtures
 
 
@@ -210,15 +207,7 @@ def _continental_cup(club: Club, country: str, league_tier: int, rng: random.Ran
             )
         )
 
-    if not _survives_round(club, rng):
-        return fixtures
-
-    knockout_stages = [
-        ("round-16", "Round of 16"),
-        ("quarterfinal", "Quarterfinal"),
-        ("semifinal", "Semifinal"),
-        ("final", "Final"),
-    ]
+    knockout_stages = list(zip(KNOCKOUT_STAGES, ("Round of 16", "Quarterfinal", "Semifinal", "Final")))
     for idx, (stage_id, stage_display) in enumerate(knockout_stages):
         opponent = candidates[(6 + idx) % len(candidates)]
         fixtures.append(
@@ -233,9 +222,49 @@ def _continental_cup(club: Club, country: str, league_tier: int, rng: random.Ran
                 home_away="neutral" if stage_id == "final" else ("home" if idx % 2 == 0 else "away"),
             )
         )
-        if stage_id != "final" and not _survives_round(club, rng):
-            break
     return fixtures
+
+
+def drop_eliminated_fixtures(progress: SeasonProgress, match: MatchResult) -> SeasonProgress:
+    """Saca del calendario las rondas que el club ya no va a jugar.
+
+    El cuadro se genera entero, así que hay que podarlo cuando te eliminan. Solo
+    se tocan fixtures posteriores al partido en curso, y solo de esa competición:
+    quedar afuera de la copa no puede borrarte los partidos de liga.
+    """
+    if not progress.fixtures:
+        return progress
+
+    if is_knockout(match.stageId):
+        eliminated = not advanced(match)
+    elif match.stageId == LEAGUE_PHASE_STAGE:
+        # La fase de liga no elimina partido a partido: se clasifica por puntos
+        # y solo tiene sentido preguntarlo cuando ya se jugó entera.
+        pending_league_phase = any(
+            fixture.competitionId == match.competitionId and fixture.stageId == LEAGUE_PHASE_STAGE
+            for fixture in progress.fixtures[progress.matchesPlayed:]
+        )
+        if pending_league_phase:
+            return progress
+        eliminated = (
+            league_phase_points(progress.matchHistory, match.competitionId)
+            < LEAGUE_PHASE_QUALIFYING_POINTS
+        )
+    else:
+        return progress
+
+    if not eliminated:
+        return progress
+
+    played = progress.fixtures[: progress.matchesPlayed]
+    upcoming = [
+        fixture
+        for fixture in progress.fixtures[progress.matchesPlayed:]
+        if not (fixture.competitionId == match.competitionId and fixture.stageId in KNOCKOUT_STAGES)
+    ]
+    progress.fixtures = played + upcoming
+    progress.matchesTotal = len(progress.fixtures)
+    return progress
 
 
 def build_season_fixtures(
@@ -371,7 +400,7 @@ def _knockout_trophies(progress: SeasonProgress, league_id: str) -> list[str]:
     for match in progress.matchHistory:
         if match.competitionId == league_id:
             continue
-        if match.stageId == "final" and match.result == "W" and match.competitionName not in trophies:
+        if match.stageId == "final" and advanced(match) and match.competitionName not in trophies:
             trophies.append(match.competitionName)
     return trophies
 

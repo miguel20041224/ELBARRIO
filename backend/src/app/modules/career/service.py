@@ -26,7 +26,12 @@ from app.modules.roulette.service import (
 )
 from app.modules.simulation.development import build_retirement_offer, should_offer_retirement
 from app.modules.simulation.match import build_match_selection, simulate_match
-from app.modules.simulation.season import close_season, ensure_season_fixtures, refresh_league_table
+from app.modules.simulation.season import (
+    close_season,
+    drop_eliminated_fixtures,
+    ensure_season_fixtures,
+    refresh_league_table,
+)
 from app.modules.transfers.service import (
     apply_transfer,
     compute_transfer_window,
@@ -288,6 +293,7 @@ def play_match(session_id: str, db: Session) -> CareerSession | None:
     fixture = progress.fixtures[progress.matchesPlayed] if progress.fixtures else None
     match = simulate_match(player, progress.matchesPlayed + 1, fixture=fixture)
     progress = _record_match_progress(player, progress, match)
+    progress = drop_eliminated_fixtures(progress, match)
 
     if progress.matchesPlayed < progress.matchesTotal and should_offer_event(progress):
         event = draw_event_for(player)
