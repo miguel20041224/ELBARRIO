@@ -11,8 +11,8 @@
  },
  {
   "test": "T3 play-match concurrente",
-  "status": "PASS",
-  "detail": "2/8 respuestas 200 pero el progreso avanzó 2 partidos (0 perdidos)",
+  "status": "FAIL",
+  "detail": "8/8 respuestas 200 pero el progreso avanzó 1 partidos (7 perdidos)",
   "goles_en_progress": 1,
   "goles_en_player": 1
  },
@@ -42,10 +42,10 @@
  },
  {
   "test": "T8 diferencia de gol de la tabla",
-  "status": "PASS",
-  "detail": "tabla dice PJ=30 GF=34 GC=53; los partidos reales dan PJ=30 GF=34 GC=53",
-  "puntos_tabla": 31,
-  "puntos_reales": 31
+  "status": "FAIL",
+  "detail": "tabla dice PJ=30 GF=3 GC=11; los partidos reales dan PJ=30 GF=40 GC=67",
+  "puntos_tabla": 22,
+  "puntos_reales": 22
  },
  {
   "test": "T5 persistencia tras reinicio",

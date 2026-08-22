@@ -1,371 +1,578 @@
 [
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 0,
-  "position": "ST",
-  "detail": "player.matchesPlayed=264 vs suma snapshot.matchesPlayed=358",
-  "diff": -94
- },
- {
-  "invariant": "I05",
-  "severity": "CRITICO",
-  "career": 0,
-  "position": "ST",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
-  "season": 4,
-  "match_index": 6,
-  "narrative": "Empataron 1-0 contra Sevilla de local. Jugaste 26' entrando desde el banco, clavaste 1 gol."
- },
- {
-  "invariant": "I05",
-  "severity": "CRITICO",
-  "career": 0,
-  "position": "ST",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
-  "season": 15,
-  "match_index": 10,
-  "narrative": "Empataron 1-0 contra Al-Ettifaq de visitante en Dammam. Jugaste 79' de titular, clavaste 1 gol."
- },
- {
-  "invariant": "I17",
+  "invariant": "I22",
   "severity": "ALTO",
   "career": 0,
   "position": "ST",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=72.0, stamina=65.0, vision=55.0)"
+  "detail": "temporada 7: ganó la semifinal de Champions League y la final nunca se jugó",
+  "season": 7,
+  "competition": "Champions League"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 0,
+  "position": "ST",
+  "detail": "temporada 7: la final de Copa del Rey quedó empatada y no definió campeón",
+  "season": 7,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 0,
+  "position": "ST",
+  "detail": "temporada 12: la final de FA Cup quedó empatada y no definió campeón",
+  "season": 12,
+  "competition": "FA Cup"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 0,
+  "position": "ST",
+  "detail": "temporada 13: ganó la semifinal de King Cup y la final nunca se jugó",
+  "season": 13,
+  "competition": "King Cup"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 1,
   "position": "CAM",
-  "detail": "player.matchesPlayed=509 vs suma snapshot.matchesPlayed=582",
-  "diff": -73
+  "detail": "temporada 10: la final de Champions League quedó empatada y no definió campeón",
+  "season": 10,
+  "competition": "Champions League"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 1,
+  "position": "CAM",
+  "detail": "temporada 10: la final de FA Cup quedó empatada y no definió campeón",
+  "season": 10,
+  "competition": "FA Cup"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 2,
   "position": "CM",
-  "detail": "player.matchesPlayed=306 vs suma snapshot.matchesPlayed=476",
-  "diff": -170
+  "detail": "temporada 1: la final de Copa do Brasil quedó empatada y no definió campeón",
+  "season": 1,
+  "competition": "Copa do Brasil"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 2,
+  "position": "CM",
+  "detail": "temporada 6: la final de Copa Argentina quedó empatada y no definió campeón",
+  "season": 6,
+  "competition": "Copa Argentina"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 2,
+  "position": "CM",
+  "detail": "temporada 10: la final de Copa del Rey quedó empatada y no definió campeón",
+  "season": 10,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 3,
   "position": "CB",
-  "detail": "player.matchesPlayed=385 vs suma snapshot.matchesPlayed=588",
-  "diff": -203
+  "detail": "temporada 12: la final de Champions League quedó empatada y no definió campeón",
+  "season": 12,
+  "competition": "Champions League"
  },
  {
-  "invariant": "I19",
-  "severity": "MEDIO",
+  "invariant": "I22",
+  "severity": "ALTO",
   "career": 3,
   "position": "CB",
-  "detail": "temporada 14: final ganada sin trofeo: ['FA Cup']",
-  "snapshotTrophies": []
+  "detail": "temporada 12: ganó la semifinal de DFB-Pokal y la final nunca se jugó",
+  "season": 12,
+  "competition": "DFB-Pokal"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 4,
   "position": "GK",
-  "detail": "player.matchesPlayed=368 vs suma snapshot.matchesPlayed=430",
-  "diff": -62
+  "detail": "temporada 3: la final de FA Cup quedó empatada y no definió campeón",
+  "season": 3,
+  "competition": "FA Cup"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 4,
+  "position": "GK",
+  "detail": "temporada 5: ganó la semifinal de Champions League y la final nunca se jugó",
+  "season": 5,
+  "competition": "Champions League"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 4,
+  "position": "GK",
+  "detail": "temporada 6: ganó la semifinal de Domestic Cup y la final nunca se jugó",
+  "season": 6,
+  "competition": "Domestic Cup"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 4,
+  "position": "GK",
+  "detail": "temporada 8: la final de DFB-Pokal quedó empatada y no definió campeón",
+  "season": 8,
+  "competition": "DFB-Pokal"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 4,
+  "position": "GK",
+  "detail": "temporada 12: ganó la semifinal de Champions League y la final nunca se jugó",
+  "season": 12,
+  "competition": "Champions League"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 4,
+  "position": "GK",
+  "detail": "temporada 12: la final de Coppa Italia quedó empatada y no definió campeón",
+  "season": 12,
+  "competition": "Coppa Italia"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
   "career": 5,
   "position": "LW",
-  "detail": "player.matchesPlayed=188 vs suma snapshot.matchesPlayed=450",
-  "diff": -262
+  "detail": "temporada 3: ganó la semifinal de Copa Argentina y la final nunca se jugó",
+  "season": 3,
+  "competition": "Copa Argentina"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 5,
+  "position": "LW",
+  "detail": "temporada 8: la final de Copa del Rey quedó empatada y no definió campeón",
+  "season": 8,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 5,
+  "position": "LW",
+  "detail": "temporada 9: la final de Copa del Rey quedó empatada y no definió campeón",
+  "season": 9,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 5,
+  "position": "LW",
+  "detail": "temporada 12: la final de Copa del Rey quedó empatada y no definió campeón",
+  "season": 12,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 5,
+  "position": "LW",
+  "detail": "temporada 14: ganó la semifinal de Champions League y la final nunca se jugó",
+  "season": 14,
+  "competition": "Champions League"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 5,
+  "position": "LW",
+  "detail": "temporada 15: la final de DFB-Pokal quedó empatada y no definió campeón",
+  "season": 15,
+  "competition": "DFB-Pokal"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
   "career": 6,
   "position": "CDM",
-  "detail": "player.matchesPlayed=446 vs suma snapshot.matchesPlayed=530",
-  "diff": -84
+  "detail": "temporada 6: ganó la semifinal de Coppa Italia y la final nunca se jugó",
+  "season": 6,
+  "competition": "Coppa Italia"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 6,
+  "position": "CDM",
+  "detail": "temporada 8: ganó la semifinal de Copa del Rey y la final nunca se jugó",
+  "season": 8,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 6,
+  "position": "CDM",
+  "detail": "temporada 12: la final de FA Cup quedó empatada y no definió campeón",
+  "season": 12,
+  "competition": "FA Cup"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 6,
+  "position": "CDM",
+  "detail": "temporada 14: la final de Copa do Brasil quedó empatada y no definió campeón",
+  "season": 14,
+  "competition": "Copa do Brasil"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 7,
   "position": "RB",
-  "detail": "player.matchesPlayed=492 vs suma snapshot.matchesPlayed=572",
-  "diff": -80
+  "detail": "temporada 9: la final de Coppa Italia quedó empatada y no definió campeón",
+  "season": 9,
+  "competition": "Coppa Italia"
  },
  {
-  "invariant": "I19",
-  "severity": "MEDIO",
-  "career": 7,
-  "position": "RB",
-  "detail": "temporada 15: final ganada sin trofeo: ['Copa do Brasil']",
-  "snapshotTrophies": [
-   "Brasileirão Série A"
-  ]
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 8,
-  "position": "ST",
-  "detail": "player.matchesPlayed=331 vs suma snapshot.matchesPlayed=434",
-  "diff": -103
- },
- {
-  "invariant": "I05",
-  "severity": "CRITICO",
-  "career": 8,
-  "position": "ST",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
-  "season": 1,
-  "match_index": 0,
-  "narrative": "Empataron 1-0 contra Grêmio de local. Jugaste 15' entrando desde el banco, clavaste 1 gol."
- },
- {
-  "invariant": "I17",
+  "invariant": "I22",
   "severity": "ALTO",
   "career": 8,
   "position": "ST",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=72.0, stamina=65.0, vision=55.0)"
+  "detail": "temporada 3: ganó la semifinal de Copa del Rey y la final nunca se jugó",
+  "season": 3,
+  "competition": "Copa del Rey"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 9,
-  "position": "CAM",
-  "detail": "player.matchesPlayed=419 vs suma snapshot.matchesPlayed=570",
-  "diff": -151
- },
- {
-  "invariant": "I17",
+  "invariant": "I22",
   "severity": "ALTO",
-  "career": 9,
-  "position": "CAM",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=72.0)"
+  "career": 8,
+  "position": "ST",
+  "detail": "temporada 6: ganó la semifinal de Copa del Rey y la final nunca se jugó",
+  "season": 6,
+  "competition": "Copa del Rey"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 10,
-  "position": "CM",
-  "detail": "player.matchesPlayed=424 vs suma snapshot.matchesPlayed=572",
-  "diff": -148
- },
- {
-  "invariant": "I05",
-  "severity": "CRITICO",
-  "career": 10,
-  "position": "CM",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
-  "season": 15,
-  "match_index": 35,
-  "narrative": "Empataron 1-0 contra Liverpool de visitante en Liverpool. Jugaste 82' de titular, clavaste 1 gol."
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 11,
-  "position": "CB",
-  "detail": "player.matchesPlayed=169 vs suma snapshot.matchesPlayed=450",
-  "diff": -281
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 12,
-  "position": "GK",
-  "detail": "player.matchesPlayed=330 vs suma snapshot.matchesPlayed=522",
-  "diff": -192
- },
- {
-  "invariant": "I17",
+  "invariant": "I22",
   "severity": "ALTO",
-  "career": 12,
-  "position": "GK",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=55.0)"
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 13,
-  "position": "LW",
-  "detail": "player.matchesPlayed=489 vs suma snapshot.matchesPlayed=560",
-  "diff": -71
- },
- {
-  "invariant": "I05",
-  "severity": "CRITICO",
-  "career": 13,
-  "position": "LW",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "career": 8,
+  "position": "ST",
+  "detail": "temporada 7: ganó la semifinal de Copa del Rey y la final nunca se jugó",
   "season": 7,
-  "match_index": 39,
-  "narrative": "Empataron 1-0 contra Ajax de visitante en Ámsterdam. Jugaste 90' de titular, clavaste 1 gol."
+  "competition": "Copa del Rey"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 8,
+  "position": "ST",
+  "detail": "temporada 8: ganó la semifinal de Champions League y la final nunca se jugó",
+  "season": 8,
+  "competition": "Champions League"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 9,
+  "position": "CAM",
+  "detail": "temporada 4: ganó la semifinal de Copa del Rey y la final nunca se jugó",
+  "season": 4,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 9,
+  "position": "CAM",
+  "detail": "temporada 5: ganó la semifinal de Copa del Rey y la final nunca se jugó",
+  "season": 5,
+  "competition": "Copa del Rey"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 9,
+  "position": "CAM",
+  "detail": "temporada 7: la final de Coupe de France quedó empatada y no definió campeón",
+  "season": 7,
+  "competition": "Coupe de France"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 9,
+  "position": "CAM",
+  "detail": "temporada 13: la final de Champions League quedó empatada y no definió campeón",
+  "season": 13,
+  "competition": "Champions League"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 10,
+  "position": "CM",
+  "detail": "temporada 2: la final de FA Cup quedó empatada y no definió campeón",
+  "season": 2,
+  "competition": "FA Cup"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 10,
+  "position": "CM",
+  "detail": "temporada 14: la final de Copa Libertadores quedó empatada y no definió campeón",
+  "season": 14,
+  "competition": "Copa Libertadores"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 10,
+  "position": "CM",
+  "detail": "temporada 15: la final de Copa Libertadores quedó empatada y no definió campeón",
+  "season": 15,
+  "competition": "Copa Libertadores"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 12,
+  "position": "GK",
+  "detail": "temporada 7: ganó la semifinal de Domestic Cup y la final nunca se jugó",
+  "season": 7,
+  "competition": "Domestic Cup"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 12,
+  "position": "GK",
+  "detail": "temporada 11: la final de Domestic Cup quedó empatada y no definió campeón",
+  "season": 11,
+  "competition": "Domestic Cup"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 13,
+  "position": "LW",
+  "detail": "temporada 2: la final de Copa Argentina quedó empatada y no definió campeón",
+  "season": 2,
+  "competition": "Copa Argentina"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 13,
+  "position": "LW",
+  "detail": "temporada 6: la final de Copa Argentina quedó empatada y no definió campeón",
+  "season": 6,
+  "competition": "Copa Argentina"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 13,
+  "position": "LW",
+  "detail": "temporada 7: la final de Champions League quedó empatada y no definió campeón",
+  "season": 7,
+  "competition": "Champions League"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 13,
+  "position": "LW",
+  "detail": "temporada 8: ganó la semifinal de Champions League y la final nunca se jugó",
+  "season": 8,
+  "competition": "Champions League"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 13,
+  "position": "LW",
+  "detail": "temporada 10: la final de Coupe de France quedó empatada y no definió campeón",
+  "season": 10,
+  "competition": "Coupe de France"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 13,
+  "position": "LW",
+  "detail": "temporada 11: la final de Coupe de France quedó empatada y no definió campeón",
+  "season": 11,
+  "competition": "Coupe de France"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 13,
+  "position": "LW",
+  "detail": "temporada 12: la final de Coupe de France quedó empatada y no definió campeón",
+  "season": 12,
+  "competition": "Coupe de France"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 14,
   "position": "CDM",
-  "detail": "player.matchesPlayed=313 vs suma snapshot.matchesPlayed=570",
-  "diff": -257
+  "detail": "temporada 12: la final de Coppa Italia quedó empatada y no definió campeón",
+  "season": 12,
+  "competition": "Coppa Italia"
  },
  {
-  "invariant": "I19",
-  "severity": "MEDIO",
-  "career": 14,
-  "position": "CDM",
-  "detail": "temporada 11: final ganada sin trofeo: ['FA Cup']",
-  "snapshotTrophies": []
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 15,
   "position": "RB",
-  "detail": "player.matchesPlayed=162 vs suma snapshot.matchesPlayed=494",
-  "diff": -332
+  "detail": "temporada 9: la final de Coppa Italia quedó empatada y no definió campeón",
+  "season": 9,
+  "competition": "Coppa Italia"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 15,
+  "position": "RB",
+  "detail": "temporada 13: ganó la semifinal de Coppa Italia y la final nunca se jugó",
+  "season": 13,
+  "competition": "Coppa Italia"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
   "career": 16,
   "position": "ST",
-  "detail": "player.matchesPlayed=411 vs suma snapshot.matchesPlayed=504",
-  "diff": -93
+  "detail": "temporada 10: ganó la semifinal de FA Cup y la final nunca se jugó",
+  "season": 10,
+  "competition": "FA Cup"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 17,
-  "position": "CAM",
-  "detail": "player.matchesPlayed=346 vs suma snapshot.matchesPlayed=498",
-  "diff": -152
- },
- {
-  "invariant": "I17",
+  "invariant": "I22",
   "severity": "ALTO",
   "career": 17,
   "position": "CAM",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=72.0)"
+  "detail": "temporada 14: ganó la semifinal de King Cup y la final nunca se jugó",
+  "season": 14,
+  "competition": "King Cup"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 18,
   "position": "CM",
-  "detail": "player.matchesPlayed=218 vs suma snapshot.matchesPlayed=404",
-  "diff": -186
+  "detail": "temporada 7: la final de Champions League quedó empatada y no definió campeón",
+  "season": 7,
+  "competition": "Champions League"
  },
  {
-  "invariant": "I05",
-  "severity": "CRITICO",
-  "career": 18,
-  "position": "CM",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 19,
+  "position": "CB",
+  "detail": "temporada 8: la final de FA Cup quedó empatada y no definió campeón",
+  "season": 8,
+  "competition": "FA Cup"
+ },
+ {
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 19,
+  "position": "CB",
+  "detail": "temporada 11: ganó la semifinal de Copa del Rey y la final nunca se jugó",
   "season": 11,
-  "match_index": 0,
-  "narrative": "Empataron 1-0 contra Roma de local. Jugaste 83' de titular, clavaste 1 gol."
+  "competition": "Copa del Rey"
  },
  {
-  "invariant": "I17",
+  "invariant": "I22",
   "severity": "ALTO",
-  "career": 18,
-  "position": "CM",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=68.0, vision=65.0)"
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 19,
-  "position": "CB",
-  "detail": "player.matchesPlayed=283 vs suma snapshot.matchesPlayed=540",
-  "diff": -257
- },
- {
-  "invariant": "I17",
-  "severity": "ALTO",
-  "career": 19,
-  "position": "CB",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=55.0)"
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
   "career": 20,
   "position": "GK",
-  "detail": "player.matchesPlayed=318 vs suma snapshot.matchesPlayed=542",
-  "diff": -224
+  "detail": "temporada 6: ganó la semifinal de Domestic Cup y la final nunca se jugó",
+  "season": 6,
+  "competition": "Domestic Cup"
  },
  {
-  "invariant": "I19",
-  "severity": "MEDIO",
-  "career": 20,
-  "position": "GK",
-  "detail": "temporada 15: final ganada sin trofeo: ['Copa do Brasil']",
-  "snapshotTrophies": []
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
+  "invariant": "I22",
+  "severity": "ALTO",
   "career": 21,
   "position": "LW",
-  "detail": "player.matchesPlayed=448 vs suma snapshot.matchesPlayed=506",
-  "diff": -58
+  "detail": "temporada 7: ganó la semifinal de DFB-Pokal y la final nunca se jugó",
+  "season": 7,
+  "competition": "DFB-Pokal"
  },
  {
-  "invariant": "I05",
-  "severity": "CRITICO",
+  "invariant": "I23",
+  "severity": "ALTO",
   "career": 21,
   "position": "LW",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "detail": "temporada 8: la final de DFB-Pokal quedó empatada y no definió campeón",
+  "season": 8,
+  "competition": "DFB-Pokal"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 21,
+  "position": "LW",
+  "detail": "temporada 9: la final de Champions League quedó empatada y no definió campeón",
   "season": 9,
-  "match_index": 0,
-  "narrative": "Empataron 1-0 contra Al-Hilal de local. Jugaste 42' entrando desde el banco, clavaste 1 gol."
+  "competition": "Champions League"
  },
  {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 22,
-  "position": "CDM",
-  "detail": "player.matchesPlayed=373 vs suma snapshot.matchesPlayed=522",
-  "diff": -149
- },
- {
-  "invariant": "I17",
+  "invariant": "I22",
   "severity": "ALTO",
-  "career": 22,
-  "position": "CDM",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=65.0, vision=55.0)"
- },
- {
-  "invariant": "I03",
-  "severity": "CRITICO",
-  "career": 23,
-  "position": "RB",
-  "detail": "player.matchesPlayed=386 vs suma snapshot.matchesPlayed=500",
-  "diff": -114
- },
- {
-  "invariant": "I05",
-  "severity": "CRITICO",
-  "career": 23,
-  "position": "RB",
-  "detail": "marcador 1-0 etiquetado 'D' (debería ser 'W')",
+  "career": 21,
+  "position": "LW",
+  "detail": "temporada 11: ganó la semifinal de Champions League y la final nunca se jugó",
   "season": 11,
-  "match_index": 35,
-  "narrative": "Empataron 1-0 contra Inter de visitante en Milán. Jugaste 73' de titular, clavaste 1 gol."
+  "competition": "Champions League"
  },
  {
-  "invariant": "I17",
+  "invariant": "I22",
+  "severity": "ALTO",
+  "career": 21,
+  "position": "LW",
+  "detail": "temporada 15: ganó la semifinal de King Cup y la final nunca se jugó",
+  "season": 15,
+  "competition": "King Cup"
+ },
+ {
+  "invariant": "I22",
   "severity": "ALTO",
   "career": 23,
   "position": "RB",
-  "detail": "tras 15 temporadas los atributos no cambiaron (shooting=55.0, stamina=68.0, vision=55.0)"
+  "detail": "temporada 6: ganó la semifinal de Copa Colombia y la final nunca se jugó",
+  "season": 6,
+  "competition": "Copa Colombia"
+ },
+ {
+  "invariant": "I23",
+  "severity": "ALTO",
+  "career": 23,
+  "position": "RB",
+  "detail": "temporada 13: la final de Copa Colombia quedó empatada y no definió campeón",
+  "season": 13,
+  "competition": "Copa Colombia"
  }
 ]

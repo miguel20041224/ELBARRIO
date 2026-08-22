@@ -37,11 +37,14 @@ INVARIANTS = {
     "I13": ("ALTO", "snapshot.season es estrictamente creciente sin huecos"),
     "I14": ("ALTO", "minutos == 0 implica goles == 0 y asistencias == 0"),
     "I15": ("MEDIO", "el rol previsto en la convocatoria coincide con los minutos reales"),
-    "I16": ("ALTO", "snapshot.matchesPlayed == número de fixtures de la temporada"),
+    "I16": ("ALTO", "snapshot.matchesPlayed == apariciones con minutos > 0 de la temporada"),
     "I17": ("ALTO", "los atributos del jugador evolucionan a lo largo de la carrera"),
     "I18": ("ALTO", "la posición en la tabla es coherente con los puntos"),
     "I19": ("MEDIO", "cada final ganada produce un trofeo en el snapshot"),
     "I20": ("ALTO", "se juegan todas las competiciones del calendario"),
+    "I21": ("ALTO", "snapshot.callUps == número de fixtures de la temporada"),
+    "I22": ("ALTO", "ganar una semifinal lleva a jugar la final de esa competición"),
+    "I23": ("ALTO", "una final de eliminatoria no queda empatada: define campeón"),
 }
 
 
@@ -86,12 +89,15 @@ def check(run: dict, violations: list[dict]) -> None:
     by_season_goals = defaultdict(int)
     by_season_assists = defaultdict(int)
     by_season_count = defaultdict(int)
+    by_season_appearances = defaultdict(int)
     for m in matches:
         if not m.get("match"):
             continue
         by_season_goals[m["season"]] += m["match"]["goals"]
         by_season_assists[m["season"]] += m["match"]["assists"]
         by_season_count[m["season"]] += 1
+        if m["match"]["minutesPlayed"] > 0:
+            by_season_appearances[m["season"]] += 1
     for s in seasons:
         snap = s.get("snapshot")
         if not snap:
@@ -99,8 +105,12 @@ def check(run: dict, violations: list[dict]) -> None:
         n = snap["season"]
         if by_season_goals.get(n, 0) != snap["goals"]:
             add("I04", f"temporada {n}: snapshot.goals={snap['goals']} vs partidos={by_season_goals.get(n, 0)}")
-        if by_season_count.get(n, 0) != snap["matchesPlayed"]:
-            add("I16", f"temporada {n}: snapshot.matchesPlayed={snap['matchesPlayed']} vs partidos jugados={by_season_count.get(n, 0)}")
+        if by_season_appearances.get(n, 0) != snap["matchesPlayed"]:
+            add("I16", f"temporada {n}: snapshot.matchesPlayed={snap['matchesPlayed']} "
+                       f"vs apariciones={by_season_appearances.get(n, 0)}")
+        if by_season_count.get(n, 0) != snap.get("callUps", 0):
+            add("I21", f"temporada {n}: snapshot.callUps={snap.get('callUps')} "
+                       f"vs fixtures={by_season_count.get(n, 0)}")
 
     # --- por partido ---
     role_vs_minutes = []
@@ -182,13 +192,26 @@ def check(run: dict, violations: list[dict]) -> None:
                            f"jugó {comp['played']}/{comp['total']}")
 
     # --- I19: finales ganadas sin trofeo ---
+    # --- I22/I23: integridad del cuadro de eliminatorias ---
     finals_won = defaultdict(list)
+    knockout = defaultdict(dict)
     for m in matches:
         match = m.get("match")
         if not match:
             continue
-        if "final" in (match.get("stageDisplay") or "").lower() and match["result"] == "W":
+        stage = match.get("stageId")
+        if stage in ("semifinal", "final"):
+            knockout[(m["season"], match["competitionName"])][stage] = match["result"]
+        if stage == "final" and match["result"] == "W":
             finals_won[m["season"]].append(match["competitionName"])
+
+    for (season, competition), stages in sorted(knockout.items()):
+        if stages.get("semifinal") == "W" and "final" not in stages:
+            add("I22", f"temporada {season}: ganó la semifinal de {competition} "
+                       f"y la final nunca se jugó", season=season, competition=competition)
+        if stages.get("final") == "D":
+            add("I23", f"temporada {season}: la final de {competition} quedó empatada "
+                       f"y no definió campeón", season=season, competition=competition)
     for s in seasons:
         snap = s.get("snapshot")
         if not snap:
