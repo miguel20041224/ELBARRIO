@@ -20,6 +20,15 @@ BASE = Path(__file__).parent
 RUNS = BASE / "runs"
 REPORTS = BASE / "reports"
 
+def _advanced(match: dict) -> bool:
+    """Si el club superó la ronda. Un empate lo define la tanda de penales."""
+    if match["result"] == "W":
+        return True
+    if match["result"] == "D" and match.get("penaltiesFor") is not None:
+        return match["penaltiesFor"] > match["penaltiesAgainst"]
+    return False
+
+
 # Invariantes declaradas. id -> (severidad, descripción)
 INVARIANTS = {
     "I01": ("CRITICO", "player.goals == suma de goles de todas las temporadas cerradas"),
@@ -44,7 +53,7 @@ INVARIANTS = {
     "I20": ("ALTO", "se juegan todas las competiciones del calendario"),
     "I21": ("ALTO", "snapshot.callUps == número de fixtures de la temporada"),
     "I22": ("ALTO", "ganar una semifinal lleva a jugar la final de esa competición"),
-    "I23": ("ALTO", "una final de eliminatoria no queda empatada: define campeón"),
+    "I23": ("ALTO", "una eliminatoria empatada se define por penales: nunca queda sin resolver"),
 }
 
 
@@ -201,17 +210,19 @@ def check(run: dict, violations: list[dict]) -> None:
             continue
         stage = match.get("stageId")
         if stage in ("semifinal", "final"):
-            knockout[(m["season"], match["competitionName"])][stage] = match["result"]
-        if stage == "final" and match["result"] == "W":
+            knockout[(m["season"], match["competitionName"])][stage] = match
+        if stage == "final" and _advanced(match):
             finals_won[m["season"]].append(match["competitionName"])
 
     for (season, competition), stages in sorted(knockout.items()):
-        if stages.get("semifinal") == "W" and "final" not in stages:
+        semifinal = stages.get("semifinal")
+        if semifinal is not None and _advanced(semifinal) and "final" not in stages:
             add("I22", f"temporada {season}: ganó la semifinal de {competition} "
                        f"y la final nunca se jugó", season=season, competition=competition)
-        if stages.get("final") == "D":
-            add("I23", f"temporada {season}: la final de {competition} quedó empatada "
-                       f"y no definió campeón", season=season, competition=competition)
+        for stage_id, match in stages.items():
+            if match["result"] == "D" and match.get("penaltiesFor") is None:
+                add("I23", f"temporada {season}: la {stage_id} de {competition} quedó empatada "
+                           f"y no definió quién pasa", season=season, competition=competition)
     for s in seasons:
         snap = s.get("snapshot")
         if not snap:
