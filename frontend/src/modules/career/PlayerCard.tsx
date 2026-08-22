@@ -1,14 +1,23 @@
 import type { ClubInfo, Player } from "@/types/game";
 import { COUNTRIES } from "@/data/countries";
 import { POSITIONS } from "@/data/positions";
+import { formatMoney } from "@/lib/format";
 
 interface Props {
   player: Player;
   season: number;
   club: ClubInfo | null;
+  overall: number;
+  marketValue: number;
 }
 
-export default function PlayerCard({ player, season, club }: Props) {
+export default function PlayerCard({
+  player,
+  season,
+  club,
+  overall,
+  marketValue,
+}: Props) {
   const country = COUNTRIES.find((c) => c.code === player.birthCountry);
   const position = POSITIONS.find((p) => p.code === player.position);
 
@@ -29,13 +38,23 @@ export default function PlayerCard({ player, season, club }: Props) {
             </p>
           )}
         </div>
-        <div className="text-right">
-          <p className="font-display text-5xl text-barrio-gold leading-none">
-            {player.shirtNumber}
-          </p>
-          <p className="mt-1 text-xs uppercase tracking-widest text-barrio-muted">
-            {position?.code}
-          </p>
+        <div className="flex items-start gap-4 text-right">
+          <div>
+            <p className="font-display text-5xl text-barrio-accent leading-none">
+              {overall}
+            </p>
+            <p className="mt-1 text-xs uppercase tracking-widest text-barrio-muted">
+              OVR
+            </p>
+          </div>
+          <div>
+            <p className="font-display text-5xl text-barrio-gold leading-none">
+              {player.shirtNumber}
+            </p>
+            <p className="mt-1 text-xs uppercase tracking-widest text-barrio-muted">
+              {position?.code}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -69,6 +88,11 @@ export default function PlayerCard({ player, season, club }: Props) {
         <Row label="Partidos">{player.matchesPlayed}</Row>
         <Row label="Goles / Asist">
           {player.goals} / {player.assists}
+        </Row>
+        <Row label="Valor de mercado">
+          <span className="text-barrio-gold font-semibold">
+            {formatMoney(marketValue)}
+          </span>
         </Row>
         <Row label="Salario">
           €{Math.round(player.finance.weeklySalary).toLocaleString()}/sem

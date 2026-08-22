@@ -26,6 +26,8 @@ from app.modules.roulette.service import (
 )
 from app.modules.simulation.development import build_retirement_offer, should_offer_retirement
 from app.modules.simulation.match import build_match_selection, simulate_match
+from app.modules.player.rating import overall
+from app.modules.player.valuation import market_value
 from app.modules.simulation.season import (
     close_season,
     drop_eliminated_fixtures,
@@ -142,6 +144,8 @@ def _to_response(model: CareerSessionModel) -> CareerSession:
         pendingRetirement=retirement,
         currentClub=_club_info(player.clubId),
         nextMatchSelection=next_selection,
+        overall=overall(player),
+        marketValue=market_value(player),
     )
 
 

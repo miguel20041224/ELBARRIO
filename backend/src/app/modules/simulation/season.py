@@ -1,6 +1,7 @@
 import random
 from app.modules.clubs.data import CLUBS, Club, get_club, get_clubs_for_league, get_league
-from app.modules.player.factory import key_attributes_for
+from app.modules.player.rating import key_attributes_for, overall
+from app.modules.player.valuation import market_value
 from app.modules.simulation.competitions import (
     KNOCKOUT_STAGES,
     LEAGUE_PHASE_QUALIFYING_POINTS,
@@ -488,6 +489,8 @@ def close_season(
         season=season_number,
         clubId=player.clubId,
         clubName=club_name,
+        overall=overall(player),
+        marketValue=market_value(player),
         matchesPlayed=progress.appearances,
         callUps=progress.matchesPlayed,
         goals=progress.goals,

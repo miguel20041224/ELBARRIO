@@ -18,7 +18,13 @@ from app.modules.decisions.engine import apply_choice
 from app.modules.events.chains import pop_ready_chain, queue_follow_ups
 from app.modules.events.library import EVENTS, get_event
 from app.modules.events.selector import draw_event_for, should_offer_event
-from app.modules.player.factory import build_player_from_draft, key_attributes_for
+from app.modules.player.factory import build_player_from_draft
+from app.modules.player.rating import (
+    KEY_ATTRIBUTES_BY_POSITION,
+    key_attributes_for,
+    overall,
+)
+from app.modules.player.valuation import market_value
 from app.modules.simulation.development import develop_player, should_offer_retirement
 from app.modules.roulette.service import apply_outcome, build_roulette, find_outcome
 from app.modules.simulation.match import build_match_selection, simulate_match
@@ -31,13 +37,21 @@ from app.modules.simulation.season import (
 )
 from app.database import Base
 from app.models import CareerSessionModel
-from app.modules.career.service import ActionBlockedError, ConcurrentModificationError, advance_season, play_match
+from app.modules.career.service import (
+    ActionBlockedError,
+    ConcurrentModificationError,
+    advance_season,
+    create_career,
+    get_career,
+    play_match,
+)
 from app.modules.transfers.service import (
     apply_transfer,
     compute_transfer_window,
     stay_at_club,
 )
 from app.schemas import (
+    CreateCareerPayload,
     CreationDraft,
     Fixture,
     LeagueTableEntry,
@@ -1367,3 +1381,171 @@ def test_all_events_have_valid_choices_and_referenced_followups_exist():
         for choice in event.choices:
             for follow_up in choice.followUps:
                 assert follow_up.eventId in valid_ids
+
+
+# --- Fase 1: OVR agregado -------------------------------------------------
+
+
+ALL_POSITIONS = tuple(KEY_ATTRIBUTES_BY_POSITION)
+
+
+def test_every_position_grows_the_attributes_it_is_measured_on():
+    """El arquero crecía en defending/heading/passing y se lo medía por
+    composure/concentration/jumping: entrenaba lo que nadie le miraba."""
+    for position in ALL_POSITIONS:
+        assert key_attributes_for(position) == frozenset(KEY_ATTRIBUTES_BY_POSITION[position]), (
+            f"{position}: lo que crece y lo que se mide no coinciden"
+        )
+
+
+def test_overall_stays_inside_the_published_scale():
+    for position in ALL_POSITIONS:
+        p = build_player_from_draft(make_draft(position=position))
+        assert 1 <= overall(p) <= 99
+
+
+def test_overall_rises_when_a_key_attribute_rises():
+    p = build_player_from_draft(make_draft(position="ST"))
+    before = overall(p)
+    p.technical.shooting = min(99.0, p.technical.shooting + 20)
+
+    assert overall(p) > before
+
+
+def test_a_key_attribute_moves_the_overall_more_than_a_spare_one():
+    """Si un atributo irrelevante pesara igual, el OVR no diría nada del puesto."""
+    key = build_player_from_draft(make_draft(position="ST"))
+    spare = build_player_from_draft(make_draft(position="ST"))
+    base = overall(key)
+
+    key.technical.shooting = min(99.0, key.technical.shooting + 15)
+    spare.mental.leadership = min(99.0, spare.mental.leadership + 15)
+
+    assert overall(key) - base > overall(spare) - base
+
+
+def test_overall_is_derived_and_never_stored():
+    """Invariante de diseño: OVR se calcula en cada respuesta, no se persiste."""
+    p = build_player_from_draft(make_draft(position="CB"))
+    assert "overall" not in p.model_dump(by_alias=True)
+
+    p.technical.defending = min(99.0, p.technical.defending + 10)
+    assert overall(p) == overall(p.model_copy(deep=True))
+
+
+def test_match_rating_reads_the_same_quality_as_the_overall():
+    """Dos nociones de calidad que se separan es exactamente el bug del arquero."""
+    from app.modules.simulation.match import _player_quality
+
+    for position in ALL_POSITIONS:
+        p = build_player_from_draft(make_draft(position=position))
+        assert _player_quality(p) == round(overall(p) / 100, 4)
+
+
+# --- Fase 1: valor de mercado ---------------------------------------------
+
+
+def _player_at(overall_target: int, age: int, league: str = "esp-laliga"):
+    """Jugador con todos los atributos planchados para fijar un OVR exacto."""
+    # El draft limita la edad de creación; una carrera en curso puede pasarla.
+    p = build_player_from_draft(make_draft(position="ST", startingLeague=league))
+    p.age = age
+    for group in ("technical", "mental", "physical"):
+        stats = getattr(p, group)
+        for attribute in vars(stats):
+            setattr(stats, attribute, float(overall_target))
+    return p
+
+
+def test_market_value_grows_with_overall():
+    cheap = _player_at(60, 25)
+    dear = _player_at(85, 25)
+
+    assert market_value(dear) > market_value(cheap) * 5
+
+
+def test_market_value_peaks_in_the_prime_and_falls_after():
+    prime = market_value(_player_at(80, 25))
+
+    assert market_value(_player_at(80, 17)) < prime
+    assert market_value(_player_at(80, 31)) < prime
+    assert market_value(_player_at(80, 36)) < market_value(_player_at(80, 31))
+
+
+def test_market_value_follows_the_league():
+    strong = market_value(_player_at(78, 25, league="esp-laliga"))
+    weak = market_value(_player_at(78, 25, league="col-primera-b"))
+
+    assert strong > weak
+
+
+def test_market_value_is_never_negative_and_has_a_floor():
+    worst = _player_at(20, 39, league="col-primera-b")
+
+    assert market_value(worst) > 0
+
+
+def test_market_value_lands_in_copero_order_of_magnitude():
+    """Anclas del dataset (INFORME §4.5): 16/OVR50 ~ €100K, 25/OVR90 ~ €98M."""
+    rookie = market_value(_player_at(50, 16, league="col-primera-a"))
+    star = market_value(_player_at(90, 25, league="arg-primera"))
+
+    assert 20_000 <= rookie <= 600_000
+    assert 50_000_000 <= star <= 200_000_000
+
+
+def test_market_value_is_derived_and_never_stored():
+    p = _player_at(75, 24)
+    assert "marketValue" not in p.model_dump(by_alias=True)
+
+
+# --- Fase 1: OVR y valor en el contrato de la API -------------------------
+
+
+def _memory_db():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    return sessionmaker(bind=engine, autoflush=False, autocommit=False)()
+
+
+def test_career_response_carries_the_derived_overall_and_value():
+    db = _memory_db()
+    try:
+        session = create_career(CreateCareerPayload(draft=make_draft(position="ST")), db)
+
+        assert session.overall == overall(session.player)
+        assert session.marketValue == market_value(session.player)
+        assert session.overall > 0
+        assert session.marketValue > 0
+    finally:
+        db.close()
+
+
+def test_derived_values_track_the_attributes_they_come_from():
+    """Si se persistieran, una carrera vieja mostraría un OVR que ya no es."""
+    db = _memory_db()
+    try:
+        session = create_career(CreateCareerPayload(draft=make_draft(position="ST")), db)
+        before = session.overall
+
+        model = db.get(CareerSessionModel, session.id)
+        data = dict(model.player_data)
+        data["technical"] = {**data["technical"], "shooting": 99.0}
+        model.player_data = data
+        db.commit()
+
+        assert get_career(session.id, db).overall > before
+    finally:
+        db.close()
+
+
+def test_season_snapshot_records_the_overall_of_that_season():
+    """El OVR de una temporada pasada no se puede recalcular después: los
+    atributos ya cambiaron. Por eso el snapshot sí lo guarda."""
+    p = build_player_from_draft(make_draft(position="ST", startingClub="esp-realmadrid"))
+    progress = SeasonProgress(matchesPlayed=1, wins=1, fixtures=build_season_fixtures(p))
+
+    snap = close_season(p, progress, 1, rng=random.Random(1))
+
+    assert snap.overall > 0
+    assert snap.marketValue > 0

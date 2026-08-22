@@ -392,12 +392,17 @@ export interface CareerSession {
   seasonComplete: boolean;
   currentClub: ClubInfo | null;
   nextMatchSelection: MatchSelection | null;
+  /** Derived from the player's attributes on every response, never stored. */
+  overall: number;
+  marketValue: number;
 }
 
 export interface SeasonSnapshot {
   season: number;
   clubId: string | null;
   clubName?: string | null;
+  overall: number;
+  marketValue: number;
   matchesPlayed: number;
   callUps: number;
   goals: number;

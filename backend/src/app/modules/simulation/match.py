@@ -1,6 +1,7 @@
 import math
 import random
 from app.modules.clubs.data import Club, get_club, get_clubs_for_league
+from app.modules.player.rating import overall
 from app.modules.simulation.competitions import needs_shootout
 from app.schemas import Fixture, MatchResult, MatchSelection, Player
 
@@ -52,21 +53,6 @@ DEFENSIVE_WEIGHT_BY_POSITION: dict[str, float] = {
 # Puestos a los que se les reconoce la figura del partido por sostener la valla.
 DEFENSIVE_MOM_POSITIONS = frozenset({"GK", "CB", "LB", "RB", "CDM"})
 
-# Atributos que definen el rendimiento de cada puesto, para ponderar el rating.
-KEY_ATTRIBUTES_BY_POSITION: dict[str, tuple[str, ...]] = {
-    "GK": ("concentration", "composure", "jumping"),
-    "CB": ("defending", "heading", "strength"),
-    "LB": ("defending", "pace", "stamina"),
-    "RB": ("defending", "pace", "stamina"),
-    "CDM": ("defending", "passing", "workRate"),
-    "CM": ("passing", "vision", "stamina"),
-    "CAM": ("passing", "vision", "dribbling"),
-    "LW": ("pace", "dribbling", "shooting"),
-    "RW": ("pace", "dribbling", "shooting"),
-    "ST": ("shooting", "heading", "pace"),
-}
-
-
 def _rookie_factor(player: Player) -> float:
     if player.state.reputation < 30:
         return player.state.reputation / 60
@@ -113,23 +99,12 @@ def _is_man_of_the_match(
 
 
 def _player_quality(player: Player) -> float:
-    """Calidad global del jugador, 0..1, pesando lo que define su posición."""
-    key = KEY_ATTRIBUTES_BY_POSITION.get(player.position, ())
-    groups = (player.technical, player.mental, player.physical)
-    values = [
-        value
-        for group in groups
-        for attribute, value in vars(group).items()
-    ]
-    overall = sum(values) / len(values)
-    key_values = [
-        getattr(group, attribute)
-        for group in groups
-        for attribute in key
-        if hasattr(group, attribute)
-    ]
-    specialised = sum(key_values) / len(key_values) if key_values else overall
-    return max(0.0, min(1.0, (overall * 0.45 + specialised * 0.55) / 100))
+    """Calidad global del jugador, 0..1, leída del mismo OVR que ve el usuario.
+
+    Tener una noción de calidad propia acá fue justo lo que dejó al arquero
+    creciendo en unos atributos y puntuando por otros.
+    """
+    return round(overall(player) / 100, 4)
 
 
 def _pick_opponent(player_club: Club, rng: random.Random) -> Club:

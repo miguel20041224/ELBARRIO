@@ -344,6 +344,10 @@ class SeasonSnapshot(BaseModel):
     season: int
     clubId: str | None
     clubName: str | None = None
+    # El OVR y el valor de esa temporada no se pueden recalcular más tarde: los
+    # atributos que los produjeron ya cambiaron. Por eso el snapshot los guarda.
+    overall: int = 0
+    marketValue: float = 0.0
     matchesPlayed: int
     callUps: int = 0
     goals: int
@@ -444,3 +448,7 @@ class CareerSession(BaseModel):
     pendingRetirement: RetirementOffer | None = None
     currentClub: ClubInfo | None = None
     nextMatchSelection: MatchSelection | None = None
+    # Derivados de los atributos en cada respuesta, nunca persistidos: guardarlos
+    # los dejaría contradecir al jugador que los produce.
+    overall: int = 0
+    marketValue: float = 0.0

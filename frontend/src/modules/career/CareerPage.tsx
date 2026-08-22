@@ -180,6 +180,8 @@ export default function CareerPage() {
             player={session.player}
             season={session.currentSeason}
             club={session.currentClub}
+            overall={session.overall}
+            marketValue={session.marketValue}
           />
           <StatsPanel player={session.player} />
           <TrophiesPanel player={session.player} />

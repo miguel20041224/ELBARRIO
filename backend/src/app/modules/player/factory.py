@@ -16,7 +16,9 @@ from app.modules.clubs.data import get_club, get_league, pick_starting_club
 
 
 POSITION_BASE_STATS: dict[str, dict[str, float]] = {
-    "GK": {"defending": 60, "heading": 45, "passing": 55},
+    # El arquero se mide por concentración, temple y salto, así que es ahí donde
+    # tiene que arrancar por encima del resto.
+    "GK": {"concentration": 68, "composure": 66, "jumping": 68, "passing": 55},
     "CB": {"defending": 70, "heading": 68, "strength": 70},
     "LB": {"pace": 68, "defending": 60, "stamina": 68},
     "RB": {"pace": 68, "defending": 60, "stamina": 68},
@@ -31,11 +33,6 @@ POSITION_BASE_STATS: dict[str, dict[str, float]] = {
 
 def _base_stat(position: str, key: str, default: float) -> float:
     return POSITION_BASE_STATS.get(position, {}).get(key, default)
-
-
-def key_attributes_for(position: str) -> frozenset[str]:
-    """Atributos que definen la posición, y que por eso progresan más rápido."""
-    return frozenset(POSITION_BASE_STATS.get(position, {}))
 
 
 def build_player_from_draft(draft: CreationDraft, rng: random.Random | None = None) -> Player:
@@ -59,8 +56,8 @@ def build_player_from_draft(draft: CreationDraft, rng: random.Random | None = No
         defending=_base_stat(pos, "defending", 45),
     )
     mental = MentalStats(
-        concentration=55,
-        composure=50,
+        concentration=_base_stat(pos, "concentration", 55),
+        composure=_base_stat(pos, "composure", 50),
         workRate=_base_stat(pos, "workRate", 60),
         leadership=40,
         vision=_base_stat(pos, "vision", 55),
@@ -68,7 +65,7 @@ def build_player_from_draft(draft: CreationDraft, rng: random.Random | None = No
     physical = PhysicalStats(
         stamina=_base_stat(pos, "stamina", 65),
         strength=_base_stat(pos, "strength", 60),
-        jumping=60,
+        jumping=_base_stat(pos, "jumping", 60),
         agility=65,
     )
 
